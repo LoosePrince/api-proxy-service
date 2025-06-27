@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>举报管理 - API 中转服务</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .report-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .report-card:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        .report-header {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+        }
+        .report-content {
+            padding: 1.5rem;
+        }
+        .report-actions {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+        .reason-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .url-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 0.5rem;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 返回按钮 -->
+            <div class="col-12 p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="/admin/dashboard" class="btn btn-outline-secondary me-3">
+                            <i class="bi bi-arrow-left"></i>
+                            返回仪表板
+                        </a>
+                        <h2 class="d-inline-block mb-0">举报管理</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="refreshReports()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            刷新
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="bg-white rounded p-3 shadow-sm">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-primary" id="totalCount">-</h4>
+                            <small class="text-muted">总举报数</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success" id="todayCount">-</h4>
+                            <small class="text-muted">今日新增</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info" id="processedCount">-</h4>
+                            <small class="text-muted">已处理</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning" id="pendingCount">-</h4>
+                            <small class="text-muted">待处理</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选和搜索 -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="bg-white rounded p-3 shadow-sm">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="searchInput" 
+                                   placeholder="搜索目标URL或描述...">
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="reasonFilter">
+                                <option value="">全部原因</option>
+                                <option value="spam">垃圾内容</option>
+                                <option value="abuse">滥用服务</option>
+                                <option value="illegal">违法内容</option>
+                                <option value="inappropriate">不当内容</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">全部状态</option>
+                                <option value="pending">待处理</option>
+                                <option value="processed">已处理</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="sortOrder">
+                                <option value="desc">最新优先</option>
+                                <option value="asc">最早优先</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-primary w-100" onclick="filterReports()">
+                                <i class="bi bi-search"></i>
+                                搜索
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 举报列表 -->
+        <div class="row">
+            <div class="col-12">
+                <div id="reportsList">
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-2">正在加载举报数据...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <nav aria-label="举报分页">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- 分页按钮将通过JavaScript生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看详情模态框 -->
+    <div class="modal fade" id="reportDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">举报详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="reportDetailBody">
+                    <!-- 详情内容将通过JavaScript填充 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" id="addToBlacklistBtn">
+                        <i class="bi bi-shield-x"></i>
+                        加入黑名单
+                    </button>
+                    <button type="button" class="btn btn-success" id="markProcessedBtn">
+                        <i class="bi bi-check"></i>
+                        标记为已处理
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deleteReportBtn">
+                        <i class="bi bi-trash"></i>
+                        删除举报
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let currentReportId = null;
+        const pageSize = 10;
+
+        // 举报原因映射
+        const reasonMap = {
+            'spam': '垃圾内容',
+            'abuse': '滥用服务',
+            'illegal': '违法内容',
+            'inappropriate': '不当内容',
+            'other': '其他'
+        };
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadReportsList();
+            initEventListeners();
+        });
+
+        // 初始化事件监听
+        function initEventListeners() {
+            // 搜索框回车事件
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    filterReports();
+                }
+            });
+
+            // 筛选变化事件
+            document.getElementById('reasonFilter').addEventListener('change', filterReports);
+            document.getElementById('statusFilter').addEventListener('change', filterReports);
+            document.getElementById('sortOrder').addEventListener('change', filterReports);
+
+            // 模态框事件
+            const modal = document.getElementById('reportDetailModal');
+            modal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                currentReportId = button.getAttribute('data-report-id');
+                loadReportDetail(currentReportId);
+            });
+
+            // 加入黑名单按钮
+            document.getElementById('addToBlacklistBtn').addEventListener('click', function() {
+                addToBlacklist(currentReportId);
+            });
+
+            // 标记已处理按钮
+            document.getElementById('markProcessedBtn').addEventListener('click', function() {
+                markAsProcessed(currentReportId);
+            });
+
+            // 删除按钮
+            document.getElementById('deleteReportBtn').addEventListener('click', function() {
+                if (confirm('确定要删除这条举报吗？此操作不可撤销。')) {
+                    deleteReport(currentReportId);
+                }
+            });
+        }
+
+        // 加载举报列表
+        async function loadReportsList(page = 1) {
+            currentPage = page;
+            
+            try {
+                const params = new URLSearchParams({
+                    page: page,
+                    limit: pageSize,
+                    search: document.getElementById('searchInput').value,
+                    reason: document.getElementById('reasonFilter').value,
+                    status: document.getElementById('statusFilter').value,
+                    sort: document.getElementById('sortOrder').value
+                });
+
+                const response = await fetch(`/admin/reports/data?${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    renderReportsList(result.data);
+                    renderPagination(result.pagination);
+                    updateStats(result.stats);
+                } else {
+                    showError('加载举报列表失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('加载举报列表失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 渲染举报列表
+        function renderReportsList(reports) {
+            const container = document.getElementById('reportsList');
+            
+            if (!reports || reports.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-flag"></i>
+                        <h5>暂无举报数据</h5>
+                        <p>还没有收到用户举报，或者当前筛选条件下没有匹配的结果。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = reports.map(report => `
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge ${getReasonBadgeClass(report.reason)} reason-badge me-2">
+                                    ${reasonMap[report.reason] || report.reason}
+                                </span>
+                                <span class="badge ${report.status === 'processed' ? 'bg-success' : 'bg-warning'} reason-badge">
+                                    ${report.status === 'processed' ? '已处理' : '待处理'}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-muted">
+                                    ${formatDate(report.created_at)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="report-content">
+                        <div class="mb-3">
+                            <strong>举报的URL：</strong>
+                            <div class="url-display mt-1">
+                                ${report.target_url}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>举报描述：</strong>
+                            <p class="mb-0 mt-1">${truncateText(report.description || '无详细描述', 100)}</p>
+                        </div>
+                        ${report.reporter_email ? `
+                            <div>
+                                <strong>举报人邮箱：</strong>
+                                <span class="text-muted">${report.reporter_email}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="report-actions">
+                        <button class="btn btn-sm btn-outline-primary" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#reportDetailModal"
+                                data-report-id="${report.id}">
+                            <i class="bi bi-eye"></i>
+                            查看详情
+                        </button>
+                        ${report.status !== 'processed' ? `
+                            <button class="btn btn-sm btn-outline-warning ms-2" 
+                                    onclick="addToBlacklist(${report.id})">
+                                <i class="bi bi-shield-x"></i>
+                                加入黑名单
+                            </button>
+                            <button class="btn btn-sm btn-outline-success ms-2" 
+                                    onclick="markAsProcessed(${report.id})">
+                                <i class="bi bi-check"></i>
+                                标记已处理
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-outline-danger ms-2" 
+                                onclick="confirmDelete(${report.id})">
+                            <i class="bi bi-trash"></i>
+                            删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // 渲染分页
+        function renderPagination(pagination) {
+            const container = document.getElementById('pagination');
+            
+            if (!pagination || pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // 上一页按钮
+            html += `
+                <li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadReportsList(${pagination.currentPage - 1})">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+
+            // 页码按钮
+            const startPage = Math.max(1, pagination.currentPage - 2);
+            const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadReportsList(${i})">${i}</a>
+                    </li>
+                `;
+            }
+
+            // 下一页按钮
+            html += `
+                <li class="page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadReportsList(${pagination.currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // 更新统计信息
+        function updateStats(stats) {
+            if (stats) {
+                document.getElementById('totalCount').textContent = stats.total || 0;
+                document.getElementById('todayCount').textContent = stats.today || 0;
+                document.getElementById('processedCount').textContent = stats.processed || 0;
+                document.getElementById('pendingCount').textContent = stats.pending || 0;
+            }
+        }
+
+        // 筛选举报
+        function filterReports() {
+            loadReportsList(1);
+        }
+
+        // 刷新举报
+        function refreshReports() {
+            loadReportsList(currentPage);
+        }
+
+        // 加载举报详情
+        async function loadReportDetail(reportId) {
+            try {
+                const response = await fetch(`/admin/reports/${reportId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    renderReportDetail(result.data);
+                } else {
+                    showError('加载举报详情失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('加载举报详情失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 渲染举报详情
+        function renderReportDetail(report) {
+            const container = document.getElementById('reportDetailBody');
+            
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>举报原因:</strong>
+                        <p>
+                            <span class="badge ${getReasonBadgeClass(report.reason)}">
+                                ${reasonMap[report.reason] || report.reason}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>状态:</strong>
+                        <p>
+                            <span class="badge ${report.status === 'processed' ? 'bg-success' : 'bg-warning'}">
+                                ${report.status === 'processed' ? '已处理' : '待处理'}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>提交时间:</strong>
+                        <p>${formatDate(report.created_at)}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>举报人邮箱:</strong>
+                        <p>${report.reporter_email || '未提供'}</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>被举报的URL:</strong>
+                        <div class="url-display mt-2">
+                            ${report.target_url}
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <strong>详细描述:</strong>
+                        <div class="border rounded p-3 mt-2 bg-light">
+                            ${(report.description || '无详细描述').replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 加入黑名单
+        async function addToBlacklist(reportId) {
+            try {
+                const response = await fetch(`/admin/reports/${reportId}/blacklist`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('已加入黑名单');
+                    loadReportsList(currentPage);
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reportDetailModal'));
+                    modal.hide();
+                } else {
+                    showError('操作失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('加入黑名单失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 标记为已处理
+        async function markAsProcessed(reportId) {
+            try {
+                const response = await fetch(`/admin/reports/${reportId}/processed`, {
+                    method: 'PUT'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('已标记为已处理');
+                    loadReportsList(currentPage);
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reportDetailModal'));
+                    modal?.hide();
+                } else {
+                    showError('操作失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('标记已处理失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 删除举报
+        async function deleteReport(reportId) {
+            try {
+                const response = await fetch(`/admin/reports/${reportId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('举报已删除');
+                    loadReportsList(currentPage);
+                    
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reportDetailModal'));
+                    modal?.hide();
+                } else {
+                    showError('删除失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('删除举报失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 确认删除
+        function confirmDelete(reportId) {
+            if (confirm('确定要删除这条举报吗？此操作不可撤销。')) {
+                deleteReport(reportId);
+            }
+        }
+
+        // 工具函数
+        function getReasonBadgeClass(reason) {
+            const badgeClasses = {
+                'spam': 'bg-warning',
+                'abuse': 'bg-danger',
+                'illegal': 'bg-dark',
+                'inappropriate': 'bg-info',
+                'other': 'bg-secondary'
+            };
+            return badgeClasses[reason] || 'bg-secondary';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) {
+                return text;
+            }
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function showSuccess(message) {
+            // 这里可以集成更好的提示组件
+            alert(message);
+        }
+
+        function showError(message) {
+            // 这里可以集成更好的提示组件
+            alert(message);
+        }
+    </script>
+</body>
+</html>

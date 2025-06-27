@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>举报滥用 - API 中转服务</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-arrow-left-right"></i>
+                API 中转服务
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-house"></i>
+                    返回首页
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="container py-5">
+        <div class="form-container">
+            <div class="form-header">
+                <h2>
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                    举报滥用行为
+                </h2>
+                <p>如果您发现有人滥用我们的服务，请填写此表单进行举报</p>
+            </div>
+
+            <form id="reportForm">
+                <div class="mb-3">
+                    <label for="target_url" class="form-label">被举报的 URL <span class="text-danger">*</span></label>
+                    <input type="url" class="form-control" id="target_url" name="target_url" 
+                           placeholder="https://example.com/suspicious-api" required>
+                    <div class="form-text">请提供完整的被举报URL地址</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="reason" class="form-label">举报原因 <span class="text-danger">*</span></label>
+                    <select class="form-select" id="reason" name="reason" required>
+                        <option value="">请选择举报原因</option>
+                        <option value="spam">垃圾信息</option>
+                        <option value="illegal">违法内容</option>
+                        <option value="abuse">滥用服务</option>
+                        <option value="copyright">版权侵犯</option>
+                        <option value="other">其他原因</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">详细描述 <small class="text-muted">(可选)</small></label>
+                    <textarea class="form-control" id="description" name="description" rows="5" 
+                              placeholder="请详细描述您举报的原因和发现的问题..."></textarea>
+                    <div class="form-text">最多 1000 个字符</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="reporter_email" class="form-label">您的邮箱 <small class="text-muted">(可选)</small></label>
+                    <input type="email" class="form-control" id="reporter_email" name="reporter_email" 
+                           placeholder="your@email.com">
+                    <div class="form-text">如果需要进一步核实情况，我们可能会联系您</div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>请注意：</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>我们会认真调查每一个举报</li>
+                        <li>虚假举报可能导致您的使用权限被限制</li>
+                        <li>举报信息将被保密处理</li>
+                        <li>我们会在 1-3 个工作日内处理举报</li>
+                    </ul>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-warning btn-lg">
+                        <i class="bi bi-flag"></i>
+                        提交举报
+                    </button>
+                    <a href="index.html" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        返回首页
+                    </a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>&copy; 2024 API 中转服务. 保留所有权利.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="feedback.html" class="text-decoration-none me-3">反馈</a>
+                    <a href="report.html" class="text-decoration-none">举报</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // 初始化举报表单
+        document.addEventListener('DOMContentLoaded', function() {
+            submitForm('reportForm', '/public/report', '举报已提交，我们会尽快处理！');
+        });
+    </script>
+</body>
+</html> 

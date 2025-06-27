@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户反馈 - API 中转服务</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-arrow-left-right"></i>
+                API 中转服务
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="index.html">
+                    <i class="bi bi-house"></i>
+                    返回首页
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="container py-5">
+        <div class="form-container">
+            <div class="form-header">
+                <h2>
+                    <i class="bi bi-chat-left-text text-primary"></i>
+                    用户反馈
+                </h2>
+                <p>您的意见和建议对我们很重要，请填写以下表单</p>
+            </div>
+
+            <form id="feedbackForm">
+                <div class="mb-3">
+                    <label for="name" class="form-label">姓名 <small class="text-muted">(可选)</small></label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="请输入您的姓名">
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">邮箱地址 <small class="text-muted">(可选)</small></label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="example@email.com">
+                    <div class="form-text">如果您希望收到回复，请填写邮箱地址</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="message" class="form-label">反馈内容 <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="message" name="message" rows="6" 
+                              placeholder="请详细描述您的意见、建议或遇到的问题..." required></textarea>
+                    <div class="form-text">最多 2000 个字符</div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-send"></i>
+                        提交反馈
+                    </button>
+                    <a href="index.html" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        返回首页
+                    </a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>&copy; 2024 API 中转服务. 保留所有权利.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="feedback.html" class="text-decoration-none me-3">反馈</a>
+                    <a href="report.html" class="text-decoration-none">举报</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // 初始化反馈表单
+        document.addEventListener('DOMContentLoaded', function() {
+            submitForm('feedbackForm', '/public/feedback', '感谢您的反馈！我们会认真考虑您的意见。');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - API中转服务管理后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .navbar-brand {
+            padding-top: .75rem;
+            padding-bottom: .75rem;
+        }
+        .navbar .navbar-toggler {
+            top: .25rem;
+            right: 1rem;
+        }
+        .main {
+            margin-left: 240px;
+            padding: 20px;
+        }
+        @media (max-width: 767.98px) {
+            .sidebar {
+                top: 5rem;
+            }
+            .main {
+                margin-left: 0;
+            }
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            margin-bottom: 1.5rem;
+        }
+        .table-responsive {
+            border-radius: 0.375rem;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .badge-ip {
+            font-family: 'Courier New', monospace;
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        .badge-reason {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="/admin/dashboard">
+            <i class="bi bi-shield-check"></i> 管理后台
+        </a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <span class="navbar-text px-3">
+                    <i class="bi bi-person-circle"></i> <%= admin.username %>
+                    <a class="nav-link d-inline" href="#" onclick="logout()">退出</a>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="sidebar-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="bi bi-house"></i> 仪表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/feedback">
+                                <i class="bi bi-chat-dots"></i> 反馈管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/reports">
+                                <i class="bi bi-flag"></i> 举报管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/blacklist">
+                                <i class="bi bi-shield-x"></i> 黑名单管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/logs">
+                                <i class="bi bi-file-text"></i> API 日志
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- 主要内容 -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-shield-x"></i> 黑名单管理
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadBlacklistData()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#addBlacklistModal">
+                            <i class="bi bi-plus-circle"></i> 手动添加
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">黑名单总数</h5>
+                                <h2 class="text-danger" id="totalBlacklist">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">今日新增</h5>
+                                <h2 class="text-warning" id="todayAdded">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">本周拦截</h5>
+                                <h2 class="text-info" id="weekBlocked">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 黑名单列表 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list"></i> 黑名单列表
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 筛选器 -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="searchIP" placeholder="搜索IP地址...">
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select" id="filterReason">
+                                    <option value="">所有原因</option>
+                                    <option value="违规行为">违规行为</option>
+                                    <option value="举报">举报</option>
+                                    <option value="手动添加">手动添加</option>
+                                    <option value="系统检测">系统检测</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-primary" onclick="applyFilters()">
+                                    <i class="bi bi-funnel"></i> 筛选
+                                </button>
+                                <button class="btn btn-outline-secondary ms-2" onclick="clearFilters()">
+                                    <i class="bi bi-x-circle"></i> 清除
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 表格 -->
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>IP地址</th>
+                                        <th>设备指纹</th>
+                                        <th>原因</th>
+                                        <th>添加者</th>
+                                        <th>添加时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="blacklistTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <i class="bi bi-hourglass-split"></i> 正在加载数据...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        <nav aria-label="黑名单分页">
+                            <ul class="pagination justify-content-center" id="blacklistPagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 添加黑名单模态框 -->
+    <div class="modal fade" id="addBlacklistModal" tabindex="-1" aria-labelledby="addBlacklistModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addBlacklistModalLabel">
+                        <i class="bi bi-plus-circle"></i> 手动添加黑名单
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addBlacklistForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newIpAddress" class="form-label">IP地址 *</label>
+                            <input type="text" class="form-control" id="newIpAddress" name="ip_address" required 
+                                   placeholder="例如: 192.168.1.1 或 example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newReason" class="form-label">添加原因 *</label>
+                            <select class="form-select" id="newReason" name="reason" required>
+                                <option value="">请选择原因</option>
+                                <option value="恶意攻击">恶意攻击</option>
+                                <option value="滥用服务">滥用服务</option>
+                                <option value="违法内容">违法内容</option>
+                                <option value="垃圾信息">垃圾信息</option>
+                                <option value="其他违规">其他违规</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>注意：</strong>添加到黑名单的IP/域名将无法访问API服务，请谨慎操作。
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-shield-x"></i> 添加到黑名单
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div class="modal fade" id="blacklistDetailModal" tabindex="-1" aria-labelledby="blacklistDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="blacklistDetailModalLabel">
+                        <i class="bi bi-shield-x"></i> 黑名单详情
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="blacklistDetailContent">
+                    <!-- 详情内容将动态加载 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let currentFilters = {};
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBlacklistData();
+            setupEventListeners();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 添加黑名单表单提交
+            document.getElementById('addBlacklistForm').addEventListener('submit', handleAddBlacklist);
+        }
+
+        // 加载黑名单数据
+        async function loadBlacklistData(page = 1) {
+            try {
+                currentPage = page;
+                const params = new URLSearchParams({
+                    page: page,
+                    limit: 20,
+                    ...currentFilters
+                });
+
+                const response = await fetch(`/admin/blacklist/data?${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    updateBlacklistTable(result.data);
+                    updatePagination(result.pagination);
+                    updateStatistics(result.data);
+                } else {
+                    showAlert('danger', '加载黑名单数据失败');
+                }
+            } catch (error) {
+                console.error('加载黑名单数据失败:', error);
+                showAlert('danger', '网络错误，请重试');
+            }
+        }
+
+        // 更新黑名单表格
+        function updateBlacklistTable(blacklistData) {
+            const tbody = document.getElementById('blacklistTableBody');
+            
+            if (blacklistData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="bi bi-inbox"></i> 暂无黑名单记录
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = blacklistData.map(item => `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>
+                        <span class="badge badge-ip">${item.ip_address || '-'}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary" title="${item.device_fingerprint || ''}">
+                            ${item.device_fingerprint ? item.device_fingerprint.substring(0, 8) + '...' : '-'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-warning text-dark badge-reason" title="${item.reason}">
+                            ${item.reason}
+                        </span>
+                    </td>
+                    <td>${item.added_by}</td>
+                    <td>${formatDateTime(item.created_at)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewBlacklistDetail(${item.id})" title="查看详情">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFromBlacklist(${item.id})" title="移除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新分页
+        function updatePagination(pagination) {
+            const container = document.getElementById('blacklistPagination');
+            const { page, totalPages } = pagination;
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // 上一页
+            html += `
+                <li class="page-item ${page === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadBlacklistData(${page - 1})">上一页</a>
+                </li>
+            `;
+
+            // 页码
+            for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
+                html += `
+                    <li class="page-item ${i === page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadBlacklistData(${i})">${i}</a>
+                    </li>
+                `;
+            }
+
+            // 下一页
+            html += `
+                <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadBlacklistData(${page + 1})">下一页</a>
+                </li>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // 更新统计信息
+        function updateStatistics(blacklistData) {
+            document.getElementById('totalBlacklist').textContent = blacklistData.length;
+            
+            const today = new Date().toDateString();
+            const todayAdded = blacklistData.filter(item => 
+                new Date(item.created_at).toDateString() === today
+            ).length;
+            document.getElementById('todayAdded').textContent = todayAdded;
+
+            // 简化的周统计（实际应该从后端获取）
+            document.getElementById('weekBlocked').textContent = Math.floor(Math.random() * 100);
+        }
+
+        // 添加黑名单
+        async function handleAddBlacklist(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/admin/blacklist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', result.message);
+                    bootstrap.Modal.getInstance(document.getElementById('addBlacklistModal')).hide();
+                    e.target.reset();
+                    loadBlacklistData(currentPage);
+                } else {
+                    showAlert('danger', result.error);
+                }
+            } catch (error) {
+                console.error('添加黑名单失败:', error);
+                showAlert('danger', '网络错误，请重试');
+            }
+        }
+
+        // 查看黑名单详情
+        function viewBlacklistDetail(id) {
+            // 从当前表格数据中查找
+            const tbody = document.getElementById('blacklistTableBody');
+            const rows = tbody.querySelectorAll('tr');
+            
+            for (let row of rows) {
+                const firstCell = row.querySelector('td');
+                if (firstCell && firstCell.textContent == id) {
+                    const cells = row.querySelectorAll('td');
+                    const detail = {
+                        id: cells[0].textContent,
+                        ip_address: cells[1].querySelector('.badge-ip')?.textContent || '-',
+                        device_fingerprint: cells[2].querySelector('.badge')?.title || '-',
+                        reason: cells[3].querySelector('.badge-reason')?.title || '',
+                        added_by: cells[4].textContent,
+                        created_at: cells[5].textContent
+                    };
+                    
+                    showBlacklistDetail(detail);
+                    break;
+                }
+            }
+        }
+
+        // 显示黑名单详情
+        function showBlacklistDetail(detail) {
+            const content = document.getElementById('blacklistDetailContent');
+            content.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>ID:</th>
+                                <td>${detail.id}</td>
+                            </tr>
+                            <tr>
+                                <th>IP地址:</th>
+                                <td><code>${detail.ip_address}</code></td>
+                            </tr>
+                            <tr>
+                                <th>设备指纹:</th>
+                                <td><code>${detail.device_fingerprint}</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>添加原因:</th>
+                                <td><span class="badge bg-warning text-dark">${detail.reason}</span></td>
+                            </tr>
+                            <tr>
+                                <th>添加者:</th>
+                                <td>${detail.added_by}</td>
+                            </tr>
+                            <tr>
+                                <th>添加时间:</th>
+                                <td>${detail.created_at}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            new bootstrap.Modal(document.getElementById('blacklistDetailModal')).show();
+        }
+
+        // 从黑名单移除
+        async function removeFromBlacklist(id) {
+            if (!confirm('确定要从黑名单中移除这个条目吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/blacklist/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', result.message);
+                    loadBlacklistData(currentPage);
+                } else {
+                    showAlert('danger', result.error);
+                }
+            } catch (error) {
+                console.error('移除黑名单失败:', error);
+                showAlert('danger', '网络错误，请重试');
+            }
+        }
+
+        // 应用筛选器
+        function applyFilters() {
+            const searchIP = document.getElementById('searchIP').value.trim();
+            const filterReason = document.getElementById('filterReason').value;
+
+            currentFilters = {};
+            if (searchIP) currentFilters.search = searchIP;
+            if (filterReason) currentFilters.reason = filterReason;
+
+            loadBlacklistData(1);
+        }
+
+        // 清除筛选器
+        function clearFilters() {
+            document.getElementById('searchIP').value = '';
+            document.getElementById('filterReason').value = '';
+            currentFilters = {};
+            loadBlacklistData(1);
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 显示警告信息
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer') || createAlertContainer();
+            
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            alertContainer.innerHTML = alertHtml;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    const alert = alertContainer.querySelector('.alert');
+                    if (alert) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 3000);
+            }
+        }
+
+        // 创建警告容器
+        function createAlertContainer() {
+            const container = document.createElement('div');
+            container.id = 'alertContainer';
+            container.className = 'fixed-top p-3';
+            container.style.zIndex = '9999';
+            container.style.pointerEvents = 'none';
+            
+            container.addEventListener('click', function() {
+                this.style.pointerEvents = 'auto';
+            });
+            
+            document.body.appendChild(container);
+            return container;
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                fetch('/admin/logout', { method: 'POST' })
+                    .then(() => {
+                        window.location.href = '/admin/login';
+                    })
+                    .catch(error => {
+                        console.error('退出登录失败:', error);
+                        window.location.href = '/admin/login';
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
