@@ -70,6 +70,10 @@ app.set('trust proxy', 1);
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Bootstrap 相关静态资源
+app.use('/bootstrap', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist')));
+app.use('/bootstrap-icons', express.static(path.join(__dirname, 'node_modules', 'bootstrap-icons', 'font')));
+
 // 路由
 const apiRoutes = require('./src/routes/api');
 const publicRoutes = require('./src/routes/public');
