@@ -295,11 +295,53 @@ const deleteReport = (req, res) => {
     }
 };
 
+// 获取单个反馈详情
+const getFeedbackDetail = (req, res) => {
+    const { id } = req.params;
+    db.get('SELECT * FROM feedback WHERE id = ?', [id], (err, row) => {
+        if (err) return res.status(500).json({ success: false, error: '查询失败' });
+        if (!row) return res.status(404).json({ success: false, error: '未找到' });
+        res.json({ success: true, data: row });
+    });
+};
+
+// 更新反馈状态为已处理
+const markFeedbackProcessed = (req, res) => {
+    const { id } = req.params;
+    db.run('UPDATE feedback SET status = ? WHERE id = ?', ['processed', id], function(err) {
+        if (err) return res.status(500).json({ success: false, error: '更新失败' });
+        res.json({ success: true, message: '已标记为已处理' });
+    });
+};
+
+// 获取单个举报详情
+const getReportDetail = (req, res) => {
+    const { id } = req.params;
+    db.get('SELECT * FROM reports WHERE id = ?', [id], (err, row) => {
+        if (err) return res.status(500).json({ success: false, error: '查询失败' });
+        if (!row) return res.status(404).json({ success: false, error: '未找到' });
+        res.json({ success: true, data: row });
+    });
+};
+
+// 更新举报状态为已处理
+const markReportProcessed = (req, res) => {
+    const { id } = req.params;
+    db.run('UPDATE reports SET status = ? WHERE id = ?', ['processed', id], function(err) {
+        if (err) return res.status(500).json({ success: false, error: '更新失败' });
+        res.json({ success: true, message: '已标记为已处理' });
+    });
+};
+
 module.exports = {
     submitFeedback,
     submitReport,
     getFeedback,
     getReports,
     deleteFeedback,
-    deleteReport
+    deleteReport,
+    getFeedbackDetail,
+    markFeedbackProcessed,
+    getReportDetail,
+    markReportProcessed
 }; 

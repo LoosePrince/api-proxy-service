@@ -1,0 +1,149 @@
+:root {
+    --bg-color: #0f172a;
+    --sidebar-bg: #1e293b;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --accent-primary: #38bdf8;
+    --accent-secondary: #818cf8;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-danger: #f87171;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --glass-blur: blur(12px);
+    --glow-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Sidebar Styling */
+.modern-sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    min-height: 100vh;
+}
+
+.nav-link {
+    color: var(--text-secondary);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--accent-primary);
+}
+
+.nav-link.active {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    box-shadow: var(--glow-shadow);
+}
+
+/* Buttons */
+.btn-modern {
+    border-radius: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-primary-modern {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+}
+
+.btn-primary-modern:hover {
+    box-shadow: var(--glow-shadow);
+    transform: scale(1.02);
+}
+
+/* Inputs */
+.form-control-modern {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+}
+
+.form-control-modern:focus {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    color: var(--text-primary);
+}
+
+/* Table */
+.modern-table {
+    color: var(--text-primary);
+}
+
+.modern-table th {
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.modern-table td {
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0.75rem;
+}
+
+/* Glow Effects */
+.glow-text {
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.glow-icon {
+    filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.5));
+}
+
+/* Progress bar */
+.progress {
+    background-color: rgba(255, 255, 255, 0.1);
+    height: 8px;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+}
+
+/* Badges */
+.badge-modern {
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+    border-radius: 0.375rem;
+}
+
+.bg-success-subtle { background-color: rgba(52, 211, 153, 0.1); color: #34d399; }
+.bg-warning-subtle { background-color: rgba(251, 191, 36, 0.1); color: #fbbf24; }
+.bg-danger-subtle { background-color: rgba(248, 113, 113, 0.1); color: #f87171; }
+.bg-info-subtle { background-color: rgba(56, 189, 248, 0.1); color: #38bdf8; }

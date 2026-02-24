@@ -6,19 +6,41 @@
     <title>用户反馈 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/modern-dark.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <style>
+        body {
+            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.05), transparent),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.05), transparent),
+                        var(--bg-color);
+        }
+        .navbar {
+            background: rgba(30, 41, 59, 0.8) !important;
+            backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .form-container {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .footer {
+            background: var(--sidebar-bg);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
 </head>
 <body>
     <!-- 导航栏 -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="index.html">
-                <i class="bi bi-arrow-left-right"></i>
+            <a class="navbar-brand fw-bold glow-text" href="index.html">
+                <i class="bi bi-cpu-fill me-2 glow-icon"></i>
                 API 中转服务
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="index.html">
-                    <i class="bi bi-house"></i>
+                    <i class="bi bi-house me-1"></i>
                     返回首页
                 </a>
             </div>
@@ -27,42 +49,39 @@
 
     <!-- 主要内容 -->
     <main class="container py-5">
-        <div class="form-container">
-            <div class="form-header">
-                <h2>
-                    <i class="bi bi-chat-left-text text-primary"></i>
-                    用户反馈
-                </h2>
-                <p>您的意见和建议对我们很重要，请填写以下表单</p>
+        <div class="glass-card p-4 p-md-5 max-width-600 mx-auto">
+            <div class="text-center mb-5">
+                <div class="bg-primary bg-opacity-10 d-inline-block p-3 rounded-circle mb-4">
+                    <i class="bi bi-chat-left-heart text-primary fs-2"></i>
+                </div>
+                <h2 class="fw-bold glow-text">意见反馈</h2>
+                <p class="text-secondary">您的每一条建议都是我们前进的动力</p>
             </div>
 
             <form id="feedbackForm">
-                <div class="mb-3">
-                    <label for="name" class="form-label">姓名 <small class="text-muted">(可选)</small></label>
-                    <input type="text" class="form-control" id="name" name="name" placeholder="请输入您的姓名">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label for="name" class="form-label text-secondary small">姓名 (可选)</label>
+                        <input type="text" class="form-control form-control-modern" id="name" name="name" placeholder="您的称呼">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label for="email" class="form-label text-secondary small">邮箱 (可选)</label>
+                        <input type="email" class="form-control form-control-modern" id="email" name="email" placeholder="example@mail.com">
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="email" class="form-label">邮箱地址 <small class="text-muted">(可选)</small></label>
-                    <input type="email" class="form-control" id="email" name="email" placeholder="example@email.com">
-                    <div class="form-text">如果您希望收到回复，请填写邮箱地址</div>
+                <div class="mb-4">
+                    <label for="message" class="form-label text-secondary small">反馈内容 <span class="text-danger">*</span></label>
+                    <textarea class="form-control form-control-modern" id="message" name="message" rows="6"
+                              placeholder="请详细描述您的建议或遇到的问题..." required></textarea>
                 </div>
 
-                <div class="mb-3">
-                    <label for="message" class="form-label">反馈内容 <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="message" name="message" rows="6" 
-                              placeholder="请详细描述您的意见、建议或遇到的问题..." required></textarea>
-                    <div class="form-text">最多 2000 个字符</div>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-send"></i>
-                        提交反馈
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn btn-primary-modern btn-modern py-3">
+                        <i class="bi bi-send-fill me-2"></i> 提交反馈
                     </button>
-                    <a href="index.html" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i>
-                        返回首页
+                    <a href="index.html" class="btn btn-outline-light btn-modern py-3">
+                        取消并返回
                     </a>
                 </div>
             </form>
@@ -70,27 +89,20 @@
     </main>
 
     <!-- 页脚 -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p>&copy; 2024 API 中转服务. 保留所有权利.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="feedback.html" class="text-decoration-none me-3">反馈</a>
-                    <a href="report.html" class="text-decoration-none">举报</a>
-                </div>
-            </div>
+    <footer class="footer py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-secondary small">&copy; 2024 API 中转服务. All rights reserved.</p>
         </div>
     </footer>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="js/main.js"></script>
     <script>
-        // 初始化反馈表单
         document.addEventListener('DOMContentLoaded', function() {
-            submitForm('feedbackForm', '/public/feedback', '感谢您的反馈！我们会认真考虑您的意见。');
+            if (typeof submitForm === 'function') {
+                submitForm('feedbackForm', '/public/feedback', '感谢您的反馈！我们会认真考虑您的意见。');
+            }
         });
     </script>
 </body>
-</html> 
+</html>

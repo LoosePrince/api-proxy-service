@@ -6,220 +6,134 @@
     <title>API 日志 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/modern-dark.css" rel="stylesheet">
     <style>
-        .log-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
-        }
-        .log-card:hover {
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-        .log-header {
-            border-bottom: 1px solid #e9ecef;
-            padding: 1rem 1.5rem;
-        }
-        .log-content {
-            padding: 1.5rem;
-        }
-        .method-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-            font-weight: bold;
-        }
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .url-display {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 0.5rem;
-            font-family: monospace;
-            word-break: break-all;
-            font-size: 0.9rem;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-        .filter-section {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
+        .main-wrapper { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; flex-shrink: 0; z-index: 100; }
+        .content-area { flex-grow: 1; padding: 2rem; overflow-y: auto; }
+        .url-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .method-badge { min-width: 60px; text-align: center; }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- 返回按钮 -->
-            <div class="col-12 p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="/admin/dashboard" class="btn btn-outline-secondary me-3">
-                            <i class="bi bi-arrow-left"></i>
-                            返回仪表板
-                        </a>
-                        <h2 class="d-inline-block mb-0">API 日志</h2>
-                    </div>
-                    <div>
-                        <button class="btn btn-primary" onclick="refreshLogs()">
-                            <i class="bi bi-arrow-clockwise"></i>
-                            刷新
-                        </button>
-                        <button class="btn btn-outline-danger ms-2" onclick="clearLogs()">
-                            <i class="bi bi-trash"></i>
-                            清除日志
-                        </button>
-                    </div>
+<body>
+    <div class="main-wrapper">
+        <aside class="sidebar modern-sidebar p-3 d-flex flex-column">
+            <div class="p-3 mb-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                    <i class="bi bi-cpu-fill text-primary"></i>
+                </div>
+                <h5 class="mb-0 fw-bold glow-text">管理后台</h5>
+            </div>
+            <nav class="nav flex-column flex-grow-1">
+                <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i> 仪表板</a>
+                <a class="nav-link" href="/admin/feedback"><i class="bi bi-chat-square-dots me-2"></i> 反馈管理</a>
+                <a class="nav-link" href="/admin/reports"><i class="bi bi-flag me-2"></i> 举报管理</a>
+                <a class="nav-link" href="/admin/blacklist"><i class="bi bi-shield-slash me-2"></i> 黑名单管理</a>
+                <a class="nav-link" href="/admin/whitelist"><i class="bi bi-shield-check me-2"></i> 白名单管理</a>
+                <a class="nav-link active" href="/admin/logs"><i class="bi bi-terminal me-2"></i> API 日志</a>
+            </nav>
+            <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
+                <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-power me-2"></i> 退出登录</a>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <header class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h2 class="fw-bold mb-1">API 日志</h2>
+                    <p class="text-secondary mb-0">监控实时接口中转调用情况</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/admin/logs/export" class="btn btn-outline-light btn-modern">
+                        <i class="bi bi-download me-1"></i> 导出 CSV
+                    </a>
+                    <button class="btn btn-outline-danger btn-modern" onclick="clearLogs()">
+                        <i class="bi bi-trash me-1"></i> 清空日志
+                    </button>
+                    <button class="btn btn-primary-modern btn-modern" onclick="loadLogs()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> 刷新
+                    </button>
+                </div>
+            </header>
+
+            <div class="glass-card overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table modern-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>方法</th>
+                                <th>目标 URL</th>
+                                <th>来源 IP</th>
+                                <th>状态</th>
+                                <th>耗时</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                <div class="p-3 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+                    <div class="small text-secondary" id="paginationInfo">显示 0 - 0 条，共 0 条</div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="pagination">
+                        </ul>
+                    </nav>
                 </div>
             </div>
-        </div>
-
-        <!-- 统计信息 -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="bg-white rounded p-3 shadow-sm">
-                    <div class="row text-center">
-                        <div class="col-md-2">
-                            <h4 class="text-primary" id="totalLogs">-</h4>
-                            <small class="text-muted">总请求数</small>
-                        </div>
-                        <div class="col-md-2">
-                            <h4 class="text-success" id="successLogs">-</h4>
-                            <small class="text-muted">成功请求</small>
-                        </div>
-                        <div class="col-md-2">
-                            <h4 class="text-warning" id="clientErrorLogs">-</h4>
-                            <small class="text-muted">客户端错误</small>
-                        </div>
-                        <div class="col-md-2">
-                            <h4 class="text-danger" id="serverErrorLogs">-</h4>
-                            <small class="text-muted">服务器错误</small>
-                        </div>
-                        <div class="col-md-2">
-                            <h4 class="text-info" id="avgResponseTime">-</h4>
-                            <small class="text-muted">平均响应时间</small>
-                        </div>
-                        <div class="col-md-2">
-                            <h4 class="text-secondary" id="todayLogs">-</h4>
-                            <small class="text-muted">今日请求</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 筛选和搜索 -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="filter-section">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <label class="form-label">搜索URL</label>
-                            <input type="text" class="form-control" id="urlFilter" 
-                                   placeholder="搜索目标URL...">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">请求方法</label>
-                            <select class="form-select" id="methodFilter">
-                                <option value="">全部方法</option>
-                                <option value="GET">GET</option>
-                                <option value="POST">POST</option>
-                                <option value="PUT">PUT</option>
-                                <option value="DELETE">DELETE</option>
-                                <option value="PATCH">PATCH</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">响应状态</label>
-                            <select class="form-select" id="statusFilter">
-                                <option value="">全部状态</option>
-                                <option value="2xx">成功 (2xx)</option>
-                                <option value="4xx">客户端错误 (4xx)</option>
-                                <option value="5xx">服务器错误 (5xx)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">时间范围</label>
-                            <select class="form-select" id="timeFilter">
-                                <option value="">全部时间</option>
-                                <option value="1h">最近1小时</option>
-                                <option value="24h">最近24小时</option>
-                                <option value="7d">最近7天</option>
-                                <option value="30d">最近30天</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">排序</label>
-                            <select class="form-select" id="sortOrder">
-                                <option value="desc">最新优先</option>
-                                <option value="asc">最早优先</option>
-                            </select>
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-outline-primary w-100" onclick="filterLogs()">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 日志列表 -->
-        <div class="row">
-            <div class="col-12">
-                <div id="logsList">
-                    <div class="text-center p-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">加载中...</span>
-                        </div>
-                        <p class="mt-2">正在加载日志数据...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 分页 -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <nav aria-label="日志分页">
-                    <ul class="pagination justify-content-center" id="pagination">
-                        <!-- 分页按钮将通过JavaScript生成 -->
-                    </ul>
-                </nav>
-            </div>
-        </div>
+        </main>
     </div>
 
-    <!-- 查看详情模态框 -->
-    <div class="modal fade" id="logDetailModal" tabindex="-1">
+    <!-- 日志详情模态框 -->
+    <div class="modal fade" id="logModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">请求详情</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content glass-card p-2" style="background: var(--sidebar-bg);">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">调用详情</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="logDetailBody">
-                    <!-- 详情内容将通过JavaScript填充 -->
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <label class="text-secondary small mb-1">目标 URL</label>
+                            <div class="p-2 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 word-break-all text-info" id="detailUrl"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-secondary small mb-1">请求方法</label>
+                            <p id="detailMethod" class="fw-bold">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-secondary small mb-1">响应状态</label>
+                            <p id="detailStatus" class="fw-bold">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-secondary small mb-1">响应耗时</label>
+                            <p id="detailTime" class="fw-bold">-</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-secondary small mb-1">客户端 IP</label>
+                            <p id="detailIp" class="fw-bold">-</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-secondary small mb-1">记录时间</label>
+                            <p id="detailDate" class="fw-bold">-</p>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="text-secondary small mb-1">User Agent</label>
+                            <div class="p-2 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 small text-secondary" id="detailUA"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-light btn-modern w-100" data-bs-dismiss="modal">关闭</button>
                 </div>
             </div>
         </div>
@@ -228,368 +142,116 @@
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentPage = 1;
-        let currentLogId = null;
-        const pageSize = 20;
+        const logModal = new bootstrap.Modal(document.getElementById('logModal'));
 
-        // 页面初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            loadLogsList();
-            initEventListeners();
-        });
+        document.addEventListener('DOMContentLoaded', () => loadLogs(1));
 
-        // 初始化事件监听
-        function initEventListeners() {
-            // 搜索框回车事件
-            document.getElementById('urlFilter').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    filterLogs();
-                }
-            });
-
-            // 筛选变化事件
-            document.getElementById('methodFilter').addEventListener('change', filterLogs);
-            document.getElementById('statusFilter').addEventListener('change', filterLogs);
-            document.getElementById('timeFilter').addEventListener('change', filterLogs);
-            document.getElementById('sortOrder').addEventListener('change', filterLogs);
-
-            // 模态框事件
-            const modal = document.getElementById('logDetailModal');
-            modal.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                currentLogId = button.getAttribute('data-log-id');
-                loadLogDetail(currentLogId);
-            });
-        }
-
-        // 加载日志列表
-        async function loadLogsList(page = 1) {
+        async function loadLogs(page) {
             currentPage = page;
-            
             try {
-                const params = new URLSearchParams({
-                    page: page,
-                    limit: pageSize,
-                    url: document.getElementById('urlFilter').value,
-                    method: document.getElementById('methodFilter').value,
-                    status: document.getElementById('statusFilter').value,
-                    time: document.getElementById('timeFilter').value,
-                    sort: document.getElementById('sortOrder').value
-                });
-
-                const response = await fetch(`/admin/logs/data?${params}`);
+                const response = await fetch(`/admin/logs/data?page=${page}&limit=20`);
                 const result = await response.json();
+                const tbody = document.getElementById('logsTableBody');
 
-                if (result.success) {
-                    renderLogsList(result.data);
-                    renderPagination(result.pagination);
-                    updateStats(result.stats);
-                } else {
-                    showError('加载日志列表失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('加载日志列表失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 渲染日志列表
-        function renderLogsList(logs) {
-            const container = document.getElementById('logsList');
-            
-            if (!logs || logs.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="bi bi-list-ul"></i>
-                        <h5>暂无日志数据</h5>
-                        <p>还没有API调用记录，或者当前筛选条件下没有匹配的结果。</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const html = logs.map(log => `
-                <div class="log-card">
-                    <div class="log-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge ${getMethodBadgeClass(log.method)} method-badge me-2">
-                                    ${log.method}
-                                </span>
-                                <span class="badge ${getStatusBadgeClass(log.response_status)} status-badge">
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(log => `
+                        <tr>
+                            <td class="small text-secondary">${new Date(log.created_at).toLocaleTimeString()}</td>
+                            <td><span class="badge bg-primary bg-opacity-10 text-primary method-badge">${log.method}</span></td>
+                            <td><div class="url-cell small">${log.target_url}</div></td>
+                            <td class="small text-secondary">${log.ip_address}</td>
+                            <td>
+                                <span class="badge badge-modern ${getStatusClass(log.response_status)}">
                                     ${log.response_status}
                                 </span>
-                                <span class="text-muted ms-2">
-                                    响应时间: ${log.response_time}ms
-                                </span>
-                            </div>
-                            <div>
-                                <span class="text-muted">
-                                    ${formatDate(log.created_at)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="log-content">
-                        <div class="mb-3">
-                            <strong>目标URL：</strong>
-                            <div class="url-display mt-1">
-                                ${log.target_url}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>客户端IP：</strong>
-                                <span class="text-muted">${log.ip_address}</span>
-                            </div>
-                            <div class="col-md-6">
-                                <strong>User-Agent：</strong>
-                                <span class="text-muted" title="${log.user_agent}">
-                                    ${truncateText(log.user_agent, 50)}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-primary" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#logDetailModal"
-                                    data-log-id="${log.id}">
-                                <i class="bi bi-eye"></i>
-                                查看详情
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = html;
+                            </td>
+                            <td class="small">${log.response_time}ms</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info btn-modern" onclick="showDetail(${log.id})">
+                                    <i class="bi bi-info-circle"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    updatePagination(result.pagination);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-secondary">暂无日志记录</td></tr>';
+                }
+            } catch (error) {
+                console.error('加载失败:', error);
+            }
         }
 
-        // 渲染分页
-        function renderPagination(pagination) {
-            const container = document.getElementById('pagination');
-            
-            if (!pagination || pagination.totalPages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
+        function getStatusClass(status) {
+            if (status >= 200 && status < 300) return 'bg-success-subtle';
+            if (status >= 400 && status < 500) return 'bg-warning-subtle';
+            if (status >= 500) return 'bg-danger-subtle';
+            return 'bg-secondary-subtle';
+        }
 
+        function updatePagination(p) {
+            const info = document.getElementById('paginationInfo');
+            const start = (p.page - 1) * p.limit + 1;
+            const end = Math.min(p.page * p.limit, p.total);
+            info.textContent = `显示 ${start} - ${end} 条，共 ${p.total} 条`;
+
+            const nav = document.getElementById('pagination');
             let html = '';
             
-            // 上一页按钮
-            html += `
-                <li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadLogsList(${pagination.currentPage - 1})">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-            `;
+            // 简单分页逻辑
+            if (p.page > 1) html += `<li class="page-item"><a class="page-link bg-transparent border-secondary border-opacity-25" href="#" onclick="loadLogs(${p.page - 1})">上一页</a></li>`;
 
-            // 页码按钮
-            const startPage = Math.max(1, pagination.currentPage - 2);
-            const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
-
-            for (let i = startPage; i <= endPage; i++) {
-                html += `
-                    <li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadLogsList(${i})">${i}</a>
-                    </li>
-                `;
+            for (let i = Math.max(1, p.page - 2); i <= Math.min(p.pages, p.page + 2); i++) {
+                html += `<li class="page-item ${i === p.page ? 'active' : ''}">
+                    <a class="page-link ${i === p.page ? 'bg-primary border-primary' : 'bg-transparent border-secondary border-opacity-25'}" href="#" onclick="loadLogs(${i})">${i}</a>
+                </li>`;
             }
 
-            // 下一页按钮
-            html += `
-                <li class="page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadLogsList(${pagination.currentPage + 1})">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            `;
+            if (p.page < p.pages) html += `<li class="page-item"><a class="page-link bg-transparent border-secondary border-opacity-25" href="#" onclick="loadLogs(${p.page + 1})">下一页</a></li>`;
 
-            container.innerHTML = html;
+            nav.innerHTML = html;
         }
 
-        // 更新统计信息
-        function updateStats(stats) {
-            if (stats) {
-                document.getElementById('totalLogs').textContent = stats.total || 0;
-                document.getElementById('successLogs').textContent = stats.success || 0;
-                document.getElementById('clientErrorLogs').textContent = stats.clientError || 0;
-                document.getElementById('serverErrorLogs').textContent = stats.serverError || 0;
-                document.getElementById('avgResponseTime').textContent = (stats.avgResponseTime || 0) + 'ms';
-                document.getElementById('todayLogs').textContent = stats.today || 0;
+        async function showDetail(id) {
+            try {
+                const response = await fetch(`/admin/logs/${id}`);
+                const result = await response.json();
+                if (result.success) {
+                    const log = result.data;
+                    document.getElementById('detailUrl').textContent = log.target_url;
+                    document.getElementById('detailMethod').textContent = log.method;
+                    document.getElementById('detailStatus').textContent = log.response_status;
+                    document.getElementById('detailTime').textContent = log.response_time + 'ms';
+                    document.getElementById('detailIp').textContent = log.ip_address;
+                    document.getElementById('detailDate').textContent = new Date(log.created_at).toLocaleString();
+                    document.getElementById('detailUA').textContent = log.user_agent;
+                    logModal.show();
+                }
+            } catch (error) {
+                console.error('获取详情失败:', error);
             }
         }
 
-        // 筛选日志
-        function filterLogs() {
-            loadLogsList(1);
-        }
-
-        // 刷新日志
-        function refreshLogs() {
-            loadLogsList(currentPage);
-        }
-
-        // 清除日志
         async function clearLogs() {
-            if (!confirm('确定要清除所有日志吗？此操作不可撤销！')) {
-                return;
-            }
-
+            if (!confirm('确定要清空所有 API 日志吗？此操作不可恢复。')) return;
             try {
-                const response = await fetch('/admin/logs/clear', {
-                    method: 'DELETE'
-                });
-                
+                const response = await fetch('/admin/logs/clear', { method: 'DELETE' });
                 const result = await response.json();
-                
                 if (result.success) {
-                    showSuccess('日志已清除');
-                    loadLogsList(1);
-                } else {
-                    showError('清除失败：' + result.error);
+                    loadLogs(1);
                 }
             } catch (error) {
-                console.error('清除日志失败:', error);
-                showError('网络错误，请稍后重试');
+                console.error('清空失败:', error);
             }
         }
 
-        // 加载日志详情
-        async function loadLogDetail(logId) {
-            try {
-                const response = await fetch(`/admin/logs/${logId}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    renderLogDetail(result.data);
-                } else {
-                    showError('加载日志详情失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('加载日志详情失败:', error);
-                showError('网络错误，请稍后重试');
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (confirm('确定要退出登录吗？')) {
+                await fetch('/admin/logout', { method: 'POST' });
+                window.location.href = '/admin/login';
             }
-        }
-
-        // 渲染日志详情
-        function renderLogDetail(log) {
-            const container = document.getElementById('logDetailBody');
-            
-            container.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>请求方法:</strong>
-                        <p>
-                            <span class="badge ${getMethodBadgeClass(log.method)}">
-                                ${log.method}
-                            </span>
-                        </p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>响应状态:</strong>
-                        <p>
-                            <span class="badge ${getStatusBadgeClass(log.response_status)}">
-                                ${log.response_status}
-                            </span>
-                        </p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>响应时间:</strong>
-                        <p>${log.response_time}ms</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>请求时间:</strong>
-                        <p>${formatDate(log.created_at)}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>客户端IP:</strong>
-                        <p>${log.ip_address}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>请求ID:</strong>
-                        <p>${log.id}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <strong>目标URL:</strong>
-                        <div class="url-display mt-2">
-                            ${log.target_url}
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <strong>User-Agent:</strong>
-                        <div class="border rounded p-3 mt-2 bg-light">
-                            ${log.user_agent}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 工具函数
-        function getMethodBadgeClass(method) {
-            const badgeClasses = {
-                'GET': 'bg-primary',
-                'POST': 'bg-success',
-                'PUT': 'bg-warning',
-                'DELETE': 'bg-danger',
-                'PATCH': 'bg-info',
-                'HEAD': 'bg-secondary',
-                'OPTIONS': 'bg-dark'
-            };
-            return badgeClasses[method] || 'bg-secondary';
-        }
-
-        function getStatusBadgeClass(status) {
-            if (status >= 200 && status < 300) {
-                return 'bg-success';
-            } else if (status >= 300 && status < 400) {
-                return 'bg-info';
-            } else if (status >= 400 && status < 500) {
-                return 'bg-warning';
-            } else if (status >= 500) {
-                return 'bg-danger';
-            } else {
-                return 'bg-secondary';
-            }
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        }
-
-        function truncateText(text, maxLength) {
-            if (text.length <= maxLength) {
-                return text;
-            }
-            return text.substring(0, maxLength) + '...';
-        }
-
-        function showSuccess(message) {
-            // 这里可以集成更好的提示组件
-            alert(message);
-        }
-
-        function showError(message) {
-            // 这里可以集成更好的提示组件
-            alert(message);
-        }
+        });
     </script>
 </body>
-</html> 
+</html>

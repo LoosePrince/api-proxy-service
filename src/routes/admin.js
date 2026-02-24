@@ -7,15 +7,25 @@ const {
     checkAuth, 
     getDashboardData, 
     getApiLogs, 
-    getSystemStats 
+    getSystemStats,
+    getLogDetail,
+    clearLogs,
+    getWhitelist,
+    addToWhitelist,
+    removeFromWhitelist
 } = require('../controllers/adminController');
 const { 
     getFeedback, 
     getReports, 
     deleteFeedback, 
-    deleteReport 
+    deleteReport,
+    getFeedbackDetail,
+    markFeedbackProcessed,
+    getReportDetail,
+    markReportProcessed
 } = require('../controllers/feedbackController');
 const { authenticateAdmin } = require('../middleware/auth');
+const { convertToCSV } = require('../utils/csvExport');
 const { loginLimiter } = require('../middleware/rateLimit');
 const { 
     addToBlacklist, 
@@ -60,6 +70,23 @@ router.get('/dashboard', (req, res) => {
     });
 });
 
+// 白名单管理页面
+router.get('/whitelist', (req, res) => {
+    res.render('admin/whitelist', {
+        title: '白名单管理',
+        whitelistEnabled: process.env.WHITELIST_ENABLED === 'true',
+        admin: {
+            username: req.session.adminUsername,
+            loginTime: req.session.loginTime
+        }
+    });
+});
+
+// 白名单管理API
+router.get('/whitelist/data', getWhitelist);
+router.post('/whitelist', addToWhitelist);
+router.delete('/whitelist/:id', removeFromWhitelist);
+
 // 仪表板数据API
 router.get('/dashboard/data', getDashboardData);
 
@@ -76,82 +103,8 @@ router.get('/feedback', (req, res) => {
 
 // 反馈管理API
 router.get('/feedback/data', getFeedback);
-router.get('/feedback/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { db } = require('../models/database');
-        
-        db.get(
-            'SELECT * FROM feedback WHERE id = ?',
-            [id],
-            (err, row) => {
-                if (err) {
-                    console.error('查询反馈详情失败:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: '查询失败'
-                    });
-                }
-                
-                if (!row) {
-                    return res.status(404).json({
-                        success: false,
-                        error: '反馈不存在'
-                    });
-                }
-                
-                res.json({
-                    success: true,
-                    data: row
-                });
-            }
-        );
-    } catch (error) {
-        console.error('获取反馈详情时出错:', error);
-        res.status(500).json({
-            success: false,
-            error: '服务器错误'
-        });
-    }
-});
-router.put('/feedback/:id/processed', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { db } = require('../models/database');
-        
-        db.run(
-            'UPDATE feedback SET status = ? WHERE id = ?',
-            ['processed', id],
-            function(err) {
-                if (err) {
-                    console.error('更新反馈状态失败:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: '更新失败'
-                    });
-                }
-                
-                if (this.changes === 0) {
-                    return res.status(404).json({
-                        success: false,
-                        error: '反馈不存在'
-                    });
-                }
-                
-                res.json({
-                    success: true,
-                    message: '状态更新成功'
-                });
-            }
-        );
-    } catch (error) {
-        console.error('更新反馈状态时出错:', error);
-        res.status(500).json({
-            success: false,
-            error: '服务器错误'
-        });
-    }
-});
+router.get('/feedback/:id', getFeedbackDetail);
+router.put('/feedback/:id/processed', markFeedbackProcessed);
 router.delete('/feedback/:id', deleteFeedback);
 
 // 举报管理页面
@@ -167,82 +120,8 @@ router.get('/reports', (req, res) => {
 
 // 举报管理API
 router.get('/reports/data', getReports);
-router.get('/reports/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { db } = require('../models/database');
-        
-        db.get(
-            'SELECT * FROM reports WHERE id = ?',
-            [id],
-            (err, row) => {
-                if (err) {
-                    console.error('查询举报详情失败:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: '查询失败'
-                    });
-                }
-                
-                if (!row) {
-                    return res.status(404).json({
-                        success: false,
-                        error: '举报不存在'
-                    });
-                }
-                
-                res.json({
-                    success: true,
-                    data: row
-                });
-            }
-        );
-    } catch (error) {
-        console.error('获取举报详情时出错:', error);
-        res.status(500).json({
-            success: false,
-            error: '服务器错误'
-        });
-    }
-});
-router.put('/reports/:id/processed', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { db } = require('../models/database');
-        
-        db.run(
-            'UPDATE reports SET status = ? WHERE id = ?',
-            ['processed', id],
-            function(err) {
-                if (err) {
-                    console.error('更新举报状态失败:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: '更新失败'
-                    });
-                }
-                
-                if (this.changes === 0) {
-                    return res.status(404).json({
-                        success: false,
-                        error: '举报不存在'
-                    });
-                }
-                
-                res.json({
-                    success: true,
-                    message: '状态更新成功'
-                });
-            }
-        );
-    } catch (error) {
-        console.error('更新举报状态时出错:', error);
-        res.status(500).json({
-            success: false,
-            error: '服务器错误'
-        });
-    }
-});
+router.get('/reports/:id', getReportDetail);
+router.put('/reports/:id/processed', markReportProcessed);
 router.post('/reports/:id/blacklist', async (req, res) => {
     try {
         const { id } = req.params;
@@ -282,73 +161,87 @@ router.get('/logs', (req, res) => {
 
 // API日志数据
 router.get('/logs/data', getApiLogs);
-router.get('/logs/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { db } = require('../models/database');
-        
-        db.get(
-            'SELECT * FROM api_logs WHERE id = ?',
-            [id],
-            (err, row) => {
-                if (err) {
-                    console.error('查询日志详情失败:', err);
-                    return res.status(500).json({
-                        success: false,
-                        error: '查询失败'
-                    });
-                }
-                
-                if (!row) {
-                    return res.status(404).json({
-                        success: false,
-                        error: '日志不存在'
-                    });
-                }
-                
-                res.json({
-                    success: true,
-                    data: row
-                });
-            }
-        );
-    } catch (error) {
-        console.error('获取日志详情时出错:', error);
-        res.status(500).json({
-            success: false,
-            error: '服务器错误'
-        });
-    }
-});
-router.delete('/logs/clear', async (req, res) => {
-    try {
-        const { db } = require('../models/database');
-        
-        db.run('DELETE FROM api_logs', function(err) {
-            if (err) {
-                console.error('清除日志失败:', err);
-                return res.status(500).json({
-                    success: false,
-                    error: '清除失败'
-                });
-            }
-            
-            res.json({
-                success: true,
-                message: `已清除 ${this.changes} 条日志记录`
-            });
-        });
-    } catch (error) {
-        console.error('清除日志时出错:', error);
-        res.status(500).json({
-            success: false,
-            error: '服务器错误'
-        });
-    }
-});
+router.get('/logs/:id', getLogDetail);
+router.delete('/logs/clear', clearLogs);
 
 // 系统统计
 router.get('/stats', getSystemStats);
+
+// 导出 API 日志 CSV
+router.get('/logs/export', async (req, res) => {
+    try {
+        const { db } = require('../models/database');
+        db.all('SELECT * FROM api_logs ORDER BY created_at DESC LIMIT 5000', (err, rows) => {
+            if (err) throw err;
+
+            const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'method', label: 'Method' },
+                { key: 'target_url', label: 'Target URL' },
+                { key: 'ip_address', label: 'Source IP' },
+                { key: 'response_status', label: 'Status' },
+                { key: 'response_time', label: 'Duration(ms)' },
+                { key: 'created_at', label: 'Time' }
+            ];
+
+            const csv = convertToCSV(rows, headers);
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=api_logs.csv');
+            res.status(200).send('\uFEFF' + csv); // 添加 BOM 以支持 Excel 中文显示
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: '导出失败' });
+    }
+});
+
+// 导出举报 CSV
+router.get('/reports/export', async (req, res) => {
+    try {
+        const { db } = require('../models/database');
+        db.all('SELECT * FROM reports ORDER BY created_at DESC', (err, rows) => {
+            if (err) throw err;
+            const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'target_url', label: 'Target URL' },
+                { key: 'reason', label: 'Reason' },
+                { key: 'description', label: 'Description' },
+                { key: 'reporter_email', label: 'Reporter' },
+                { key: 'status', label: 'Status' },
+                { key: 'created_at', label: 'Time' }
+            ];
+            const csv = convertToCSV(rows, headers);
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=reports.csv');
+            res.status(200).send('\uFEFF' + csv);
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: '导出失败' });
+    }
+});
+
+// 导出反馈 CSV
+router.get('/feedback/export', async (req, res) => {
+    try {
+        const { db } = require('../models/database');
+        db.all('SELECT * FROM feedback ORDER BY created_at DESC', (err, rows) => {
+            if (err) throw err;
+            const headers = [
+                { key: 'id', label: 'ID' },
+                { key: 'name', label: 'Name' },
+                { key: 'email', label: 'Email' },
+                { key: 'message', label: 'Message' },
+                { key: 'status', label: 'Status' },
+                { key: 'created_at', label: 'Time' }
+            ];
+            const csv = convertToCSV(rows, headers);
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=feedback.csv');
+            res.status(200).send('\uFEFF' + csv);
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: '导出失败' });
+    }
+});
 
 // 系统信息
 router.get('/system', (req, res) => {

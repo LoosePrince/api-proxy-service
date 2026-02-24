@@ -6,105 +6,76 @@
     <title>管理员登录 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/modern-dark.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.1), transparent),
+                        var(--bg-color);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
         .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 3rem;
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
         }
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-header h2 {
-            color: #333;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .login-header p {
-            color: #666;
-            margin: 0;
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 12px;
-            font-weight: 600;
-        }
-        .form-control {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 12px 16px;
-        }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .alert {
-            border-radius: 10px;
+        .input-group-text {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <div class="login-header">
-            <h2>
-                <i class="bi bi-shield-lock text-primary"></i>
-                管理员登录
-            </h2>
-            <p>API 中转服务后台管理</p>
+    <div class="login-card glass-card p-4 p-md-5 fade-in">
+        <div class="text-center mb-5">
+            <div class="bg-primary bg-opacity-10 d-inline-block p-3 rounded-3 mb-4">
+                <i class="bi bi-shield-lock-fill text-primary fs-1"></i>
+            </div>
+            <h2 class="fw-bold glow-text">管理后台登录</h2>
+            <p class="text-secondary">API Proxy Service Administration</p>
         </div>
 
         <div id="alertContainer"></div>
 
         <form id="loginForm">
-            <div class="mb-3">
-                <label for="username" class="form-label">用户名</label>
+            <div class="mb-4">
+                <label for="username" class="form-label text-secondary small">管理员账号</label>
                 <div class="input-group">
                     <span class="input-group-text">
-                        <i class="bi bi-person"></i>
+                        <i class="bi bi-person-fill"></i>
                     </span>
-                    <input type="text" class="form-control" id="username" name="username" 
+                    <input type="text" class="form-control form-control-modern" id="username" name="username"
                            placeholder="请输入用户名" required>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">密码</label>
+            <div class="mb-4">
+                <label for="password" class="form-label text-secondary small">安全密码</label>
                 <div class="input-group">
                     <span class="input-group-text">
-                        <i class="bi bi-lock"></i>
+                        <i class="bi bi-key-fill"></i>
                     </span>
-                    <input type="password" class="form-control" id="password" name="password" 
+                    <input type="password" class="form-control form-control-modern" id="password" name="password"
                            placeholder="请输入密码" required>
-                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                    <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" style="border-color: var(--border-color);">
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
             </div>
 
-            <div class="d-grid gap-2 mb-3">
-                <button type="submit" class="btn btn-primary btn-login">
-                    <i class="bi bi-box-arrow-in-right"></i>
-                    登录
+            <div class="d-grid gap-3 mb-4">
+                <button type="submit" class="btn btn-primary-modern btn-modern py-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> 授权登录
                 </button>
             </div>
 
             <div class="text-center">
-                <a href="/" class="text-decoration-none">
-                    <i class="bi bi-arrow-left"></i>
-                    返回首页
+                <a href="/" class="text-secondary text-decoration-none small hover-white">
+                    <i class="bi bi-arrow-left me-1"></i> 返回服务首页
                 </a>
             </div>
         </form>
@@ -112,11 +83,9 @@
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 密码显示/隐藏切换
         document.getElementById('togglePassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
             const icon = this.querySelector('i');
-            
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
                 icon.className = 'bi bi-eye-slash';
@@ -126,72 +95,37 @@
             }
         });
 
-        // 登录表单提交
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             const submitBtn = this.querySelector('button[type="submit"]');
             const alertContainer = document.getElementById('alertContainer');
             
-            // 显示加载状态
             const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>登录中...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在授权...';
             submitBtn.disabled = true;
             
             try {
                 const response = await fetch('/admin/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
-                    alertContainer.innerHTML = `
-                        <div class="alert alert-success">
-                            <i class="bi bi-check-circle"></i>
-                            登录成功，正在跳转...
-                        </div>
-                    `;
-                    setTimeout(() => {
-                        window.location.href = '/admin/dashboard';
-                    }, 1000);
+                    alertContainer.innerHTML = `<div class="alert bg-success-subtle border-0 mb-4 animate__animated animate__fadeIn"><i class="bi bi-check-circle-fill me-2"></i>登录成功，欢迎回来</div>`;
+                    setTimeout(() => { window.location.href = '/admin/dashboard'; }, 800);
                 } else {
-                    alertContainer.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-circle"></i>
-                            ${result.error || '登录失败'}
-                        </div>
-                    `;
+                    alertContainer.innerHTML = `<div class="alert bg-danger-subtle border-0 mb-4 animate__animated animate__shakeX"><i class="bi bi-exclamation-circle-fill me-2"></i>${result.error || '登录失败'}</div>`;
                 }
             } catch (error) {
-                alertContainer.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        网络错误：${error.message}
-                    </div>
-                `;
+                alertContainer.innerHTML = `<div class="alert bg-danger-subtle border-0 mb-4"><i class="bi bi-exclamation-triangle-fill me-2"></i>网络服务异常</div>`;
             } finally {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         });
-
-        // 自动清除错误提示
-        function clearAlert() {
-            const alertContainer = document.getElementById('alertContainer');
-            setTimeout(() => {
-                const alert = alertContainer.querySelector('.alert-danger');
-                if (alert) {
-                    alert.remove();
-                }
-            }, 5000);
-        }
     </script>
 </body>
-</html> 
+</html>

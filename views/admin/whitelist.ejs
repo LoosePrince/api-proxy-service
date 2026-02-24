@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>黑名单管理 - API 中转服务</title>
+    <title>白名单管理 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <link href="/css/modern-dark.css" rel="stylesheet">
@@ -26,8 +26,8 @@
                 <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i> 仪表板</a>
                 <a class="nav-link" href="/admin/feedback"><i class="bi bi-chat-square-dots me-2"></i> 反馈管理</a>
                 <a class="nav-link" href="/admin/reports"><i class="bi bi-flag me-2"></i> 举报管理</a>
-                <a class="nav-link active" href="/admin/blacklist"><i class="bi bi-shield-slash me-2"></i> 黑名单管理</a>
-                <a class="nav-link" href="/admin/whitelist"><i class="bi bi-shield-check me-2"></i> 白名单管理</a>
+                <a class="nav-link" href="/admin/blacklist"><i class="bi bi-shield-slash me-2"></i> 黑名单管理</a>
+                <a class="nav-link active" href="/admin/whitelist"><i class="bi bi-shield-check me-2"></i> 白名单管理</a>
                 <a class="nav-link" href="/admin/logs"><i class="bi bi-terminal me-2"></i> API 日志</a>
             </nav>
             <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
@@ -38,13 +38,19 @@
         <main class="content-area">
             <header class="d-flex justify-content-between align-items-center mb-5">
                 <div>
-                    <h2 class="fw-bold mb-1">黑名单管理</h2>
-                    <p class="text-secondary mb-0">封禁恶意 IP 与 违规域名</p>
+                    <h2 class="fw-bold mb-1">白名单管理</h2>
+                    <p class="text-secondary mb-0">配置允许访问的目标域名</p>
                 </div>
                 <button class="btn btn-primary-modern btn-modern" data-bs-toggle="modal" data-bs-target="#addModal">
-                    <i class="bi bi-plus-lg me-1"></i> 手动添加
+                    <i class="bi bi-plus-lg me-1"></i> 添加域名
                 </button>
             </header>
+
+            <div class="alert bg-info-subtle border-0 mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                当前白名单验证状态: <strong><%= whitelistEnabled ? '已启用' : '未启用' %></strong>
+                (可在环境变量 <code>WHITELIST_ENABLED</code> 中配置)
+            </div>
 
             <div class="glass-card overflow-hidden">
                 <div class="table-responsive">
@@ -52,16 +58,15 @@
                         <thead>
                             <tr>
                                 <th>添加时间</th>
-                                <th>封禁对象 (IP/域名)</th>
-                                <th>原因</th>
-                                <th>添加方式</th>
-                                <th>操作人</th>
+                                <th>允许域名</th>
+                                <th>备注说明</th>
+                                <th>添加人</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
-                        <tbody id="blacklistTableBody">
+                        <tbody id="whitelistTableBody">
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="5" class="text-center py-5">
                                     <div class="spinner-border text-primary" role="status"></div>
                                 </td>
                             </tr>
@@ -77,18 +82,19 @@
         <div class="modal-dialog">
             <div class="modal-content glass-card p-2" style="background: var(--sidebar-bg);">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">添加黑名单</h5>
+                    <h5 class="modal-title fw-bold">添加白名单域名</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addForm">
                         <div class="mb-3">
-                            <label class="form-label text-secondary small">IP 地址 或 域名</label>
-                            <input type="text" class="form-control form-control-modern" name="ip_address" placeholder="例如: 1.2.3.4 或 example.com" required>
+                            <label class="form-label text-secondary small">域名</label>
+                            <input type="text" class="form-control form-control-modern" name="domain" placeholder="例如: api.github.com" required>
+                            <div class="form-text small text-secondary">支持根域名，如添加 <code>github.com</code> 将允许其所有子域名。</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-secondary small">封禁原因</label>
-                            <textarea class="form-control form-control-modern" name="reason" rows="3" placeholder="请简述封禁原因..." required></textarea>
+                            <label class="form-label text-secondary small">备注</label>
+                            <input type="text" class="form-control form-control-modern" name="description" placeholder="用途说明">
                         </div>
                     </form>
                 </div>
@@ -102,31 +108,30 @@
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', loadBlacklist);
+        document.addEventListener('DOMContentLoaded', loadWhitelist);
 
-        async function loadBlacklist() {
+        async function loadWhitelist() {
             try {
-                const response = await fetch('/admin/blacklist/data');
+                const response = await fetch('/admin/whitelist/data');
                 const result = await response.json();
-                const tbody = document.getElementById('blacklistTableBody');
+                const tbody = document.getElementById('whitelistTableBody');
 
                 if (result.success && result.data.length > 0) {
                     tbody.innerHTML = result.data.map(item => `
                         <tr>
                             <td class="small text-secondary">${new Date(item.created_at).toLocaleDateString()}</td>
-                            <td class="fw-bold text-danger">${item.ip_address || item.device_fingerprint || '未知'}</td>
-                            <td class="small">${item.reason}</td>
-                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">${item.user_agent_hash === 'Manual Add' ? '手动' : '自动'}</span></td>
+                            <td class="fw-bold text-success">${item.domain}</td>
+                            <td class="small text-secondary">${item.description || '-'}</td>
                             <td class="small">${item.added_by}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger btn-modern" onclick="removeBlacklist(${item.id})">
-                                    <i class="bi bi-unlock"></i> 移除
+                                <button class="btn btn-sm btn-outline-danger btn-modern" onclick="removeWhitelist(${item.id})">
+                                    <i class="bi bi-trash"></i> 删除
                                 </button>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-secondary">黑名单暂无记录</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-secondary">白名单暂无记录</td></tr>';
                 }
             } catch (error) {
                 console.error('加载失败:', error);
@@ -139,7 +144,7 @@
             const data = Object.fromEntries(formData.entries());
 
             try {
-                const response = await fetch('/admin/blacklist', {
+                const response = await fetch('/admin/whitelist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -148,7 +153,7 @@
                 if (result.success) {
                     bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
                     form.reset();
-                    loadBlacklist();
+                    loadWhitelist();
                 } else {
                     alert(result.error);
                 }
@@ -157,16 +162,16 @@
             }
         };
 
-        async function removeBlacklist(id) {
-            if (!confirm('确定要将该对象从黑名单中移除吗？')) return;
+        async function removeWhitelist(id) {
+            if (!confirm('确定要删除该白名单记录吗？')) return;
             try {
-                const response = await fetch(`/admin/blacklist/${id}`, { method: 'DELETE' });
+                const response = await fetch(`/admin/whitelist/${id}`, { method: 'DELETE' });
                 const result = await response.json();
                 if (result.success) {
-                    loadBlacklist();
+                    loadWhitelist();
                 }
             } catch (error) {
-                console.error('移除失败:', error);
+                console.error('删除失败:', error);
             }
         }
 

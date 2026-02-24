@@ -83,6 +83,21 @@ const initializeDatabase = () => {
                 // 忽略"列已存在"的错误
                 if (err && !err.message.includes('duplicate column name')) {
                     console.error('添加reports.status字段失败:', err);
+                }
+            });
+
+            // 创建白名单表
+            db.run(`
+                CREATE TABLE IF NOT EXISTS whitelist (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain TEXT NOT NULL UNIQUE,
+                    description TEXT,
+                    added_by VARCHAR(50) DEFAULT 'system',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('创建白名单表失败:', err);
                 } else {
                     console.log('数据库表初始化完成');
                     resolve();

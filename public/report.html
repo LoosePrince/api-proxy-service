@@ -3,22 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>举报滥用 - API 中转服务</title>
+    <title>投诉举报 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/modern-dark.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <style>
+        body {
+            background: radial-gradient(circle at top right, rgba(248, 113, 113, 0.05), transparent),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.05), transparent),
+                        var(--bg-color);
+        }
+        .navbar {
+            background: rgba(30, 41, 59, 0.8) !important;
+            backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .form-container {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .footer {
+            background: var(--sidebar-bg);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
 </head>
 <body>
     <!-- 导航栏 -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="index.html">
-                <i class="bi bi-arrow-left-right"></i>
+            <a class="navbar-brand fw-bold glow-text" href="index.html">
+                <i class="bi bi-cpu-fill me-2 glow-icon"></i>
                 API 中转服务
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="index.html">
-                    <i class="bi bi-house"></i>
+                    <i class="bi bi-house me-1"></i>
                     返回首页
                 </a>
             </div>
@@ -27,68 +49,52 @@
 
     <!-- 主要内容 -->
     <main class="container py-5">
-        <div class="form-container">
-            <div class="form-header">
-                <h2>
-                    <i class="bi bi-exclamation-triangle text-warning"></i>
-                    举报滥用行为
-                </h2>
-                <p>如果您发现有人滥用我们的服务，请填写此表单进行举报</p>
+        <div class="glass-card p-4 p-md-5 max-width-600 mx-auto">
+            <div class="text-center mb-5">
+                <div class="bg-danger bg-opacity-10 d-inline-block p-3 rounded-circle mb-4">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-2"></i>
+                </div>
+                <h2 class="fw-bold glow-text">投诉举报</h2>
+                <p class="text-secondary">维护良好的网络环境，举报违规使用行为</p>
             </div>
 
             <form id="reportForm">
-                <div class="mb-3">
-                    <label for="target_url" class="form-label">被举报的 URL <span class="text-danger">*</span></label>
-                    <input type="url" class="form-control" id="target_url" name="target_url" 
-                           placeholder="https://example.com/suspicious-api" required>
-                    <div class="form-text">请提供完整的被举报URL地址</div>
+                <div class="mb-4">
+                    <label for="target_url" class="form-label text-secondary small">违规 URL <span class="text-danger">*</span></label>
+                    <input type="url" class="form-control form-control-modern" id="target_url" name="target_url"
+                           placeholder="https://..." required>
                 </div>
 
-                <div class="mb-3">
-                    <label for="reason" class="form-label">举报原因 <span class="text-danger">*</span></label>
-                    <select class="form-select" id="reason" name="reason" required>
-                        <option value="">请选择举报原因</option>
-                        <option value="spam">垃圾信息</option>
-                        <option value="illegal">违法内容</option>
-                        <option value="abuse">滥用服务</option>
-                        <option value="copyright">版权侵犯</option>
+                <div class="mb-4">
+                    <label for="reason" class="form-label text-secondary small">举报原因 <span class="text-danger">*</span></label>
+                    <select class="form-select form-control-modern" id="reason" name="reason" required>
+                        <option value="" selected disabled>请选择举报原因</option>
+                        <option value="abuse">资源滥用 / 恶意攻击</option>
+                        <option value="spam">垃圾信息 / 广告</option>
+                        <option value="content">违法 / 不良内容</option>
+                        <option value="privacy">侵犯隐私</option>
                         <option value="other">其他原因</option>
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label for="description" class="form-label">详细描述 <small class="text-muted">(可选)</small></label>
-                    <textarea class="form-control" id="description" name="description" rows="5" 
-                              placeholder="请详细描述您举报的原因和发现的问题..."></textarea>
-                    <div class="form-text">最多 1000 个字符</div>
+                <div class="mb-4">
+                    <label for="description" class="form-label text-secondary small">详细说明</label>
+                    <textarea class="form-control form-control-modern" id="description" name="description" rows="4"
+                              placeholder="请提供更多详细信息以协助我们调查..."></textarea>
                 </div>
 
-                <div class="mb-3">
-                    <label for="reporter_email" class="form-label">您的邮箱 <small class="text-muted">(可选)</small></label>
-                    <input type="email" class="form-control" id="reporter_email" name="reporter_email" 
-                           placeholder="your@email.com">
-                    <div class="form-text">如果需要进一步核实情况，我们可能会联系您</div>
+                <div class="mb-4">
+                    <label for="reporter_email" class="form-label text-secondary small">您的邮箱 (可选)</label>
+                    <input type="email" class="form-control form-control-modern" id="reporter_email" name="reporter_email"
+                           placeholder="example@email.com">
                 </div>
 
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i>
-                    <strong>请注意：</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>我们会认真调查每一个举报</li>
-                        <li>虚假举报可能导致您的使用权限被限制</li>
-                        <li>举报信息将被保密处理</li>
-                        <li>我们会在 1-3 个工作日内处理举报</li>
-                    </ul>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-warning btn-lg">
-                        <i class="bi bi-flag"></i>
-                        提交举报
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn btn-modern btn-primary-modern py-3" style="background: linear-gradient(135deg, var(--accent-danger), #ef4444);">
+                        <i class="bi bi-flag-fill me-2"></i> 提交举报
                     </button>
-                    <a href="index.html" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i>
-                        返回首页
+                    <a href="index.html" class="btn btn-outline-light btn-modern py-3">
+                        取消并返回
                     </a>
                 </div>
             </form>
@@ -96,27 +102,20 @@
     </main>
 
     <!-- 页脚 -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p>&copy; 2024 API 中转服务. 保留所有权利.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="feedback.html" class="text-decoration-none me-3">反馈</a>
-                    <a href="report.html" class="text-decoration-none">举报</a>
-                </div>
-            </div>
+    <footer class="footer py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-secondary small">&copy; 2024 API 中转服务. All rights reserved.</p>
         </div>
     </footer>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="js/main.js"></script>
     <script>
-        // 初始化举报表单
         document.addEventListener('DOMContentLoaded', function() {
-            submitForm('reportForm', '/public/report', '举报已提交，我们会尽快处理！');
+            if (typeof submitForm === 'function') {
+                submitForm('reportForm', '/public/report', '举报已收到，我们将尽快进行核实处理。感谢您的协助！');
+            }
         });
     </script>
 </body>
-</html> 
+</html>

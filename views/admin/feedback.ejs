@@ -6,536 +6,212 @@
     <title>反馈管理 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/modern-dark.css" rel="stylesheet">
     <style>
-        .feedback-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
-        }
-        .feedback-card:hover {
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-        .feedback-header {
-            border-bottom: 1px solid #e9ecef;
-            padding: 1rem 1.5rem;
-        }
-        .feedback-content {
-            padding: 1.5rem;
-        }
-        .feedback-actions {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid #e9ecef;
-            background: #f8f9fa;
-        }
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
+        .main-wrapper { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; flex-shrink: 0; z-index: 100; }
+        .content-area { flex-grow: 1; padding: 2rem; overflow-y: auto; }
+        .message-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- 返回按钮 -->
-            <div class="col-12 p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="/admin/dashboard" class="btn btn-outline-secondary me-3">
-                            <i class="bi bi-arrow-left"></i>
-                            返回仪表板
-                        </a>
-                        <h2 class="d-inline-block mb-0">反馈管理</h2>
-                    </div>
-                    <div>
-                        <button class="btn btn-primary" onclick="refreshFeedback()">
-                            <i class="bi bi-arrow-clockwise"></i>
-                            刷新
-                        </button>
-                    </div>
+<body>
+    <div class="main-wrapper">
+        <aside class="sidebar modern-sidebar p-3 d-flex flex-column">
+            <div class="p-3 mb-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                    <i class="bi bi-cpu-fill text-primary"></i>
+                </div>
+                <h5 class="mb-0 fw-bold glow-text">管理后台</h5>
+            </div>
+            <nav class="nav flex-column flex-grow-1">
+                <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i> 仪表板</a>
+                <a class="nav-link active" href="/admin/feedback"><i class="bi bi-chat-square-dots me-2"></i> 反馈管理</a>
+                <a class="nav-link" href="/admin/reports"><i class="bi bi-flag me-2"></i> 举报管理</a>
+                <a class="nav-link" href="/admin/blacklist"><i class="bi bi-shield-slash me-2"></i> 黑名单管理</a>
+                <a class="nav-link" href="/admin/whitelist"><i class="bi bi-shield-check me-2"></i> 白名单管理</a>
+                <a class="nav-link" href="/admin/logs"><i class="bi bi-terminal me-2"></i> API 日志</a>
+            </nav>
+            <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
+                <a class="nav-link text-danger" href="#" id="logoutBtn"><i class="bi bi-power me-2"></i> 退出登录</a>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <header class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h2 class="fw-bold mb-1">反馈管理</h2>
+                    <p class="text-secondary mb-0">处理用户提交的意见与建议</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/admin/feedback/export" class="btn btn-outline-light btn-modern">
+                        <i class="bi bi-download me-1"></i> 导出 CSV
+                    </a>
+                    <button class="btn btn-primary-modern btn-modern" onclick="loadFeedback()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> 刷新列表
+                    </button>
+                </div>
+            </header>
+
+            <div class="glass-card overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table modern-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>用户</th>
+                                <th>联系方式</th>
+                                <th>内容</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedbackTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-
-        <!-- 统计信息 -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="bg-white rounded p-3 shadow-sm">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <h4 class="text-primary" id="totalCount">-</h4>
-                            <small class="text-muted">总反馈数</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-success" id="todayCount">-</h4>
-                            <small class="text-muted">今日新增</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-info" id="processedCount">-</h4>
-                            <small class="text-muted">已处理</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-warning" id="pendingCount">-</h4>
-                            <small class="text-muted">待处理</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 筛选和搜索 -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="bg-white rounded p-3 shadow-sm">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" id="searchInput" 
-                                   placeholder="搜索反馈内容或邮箱...">
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="statusFilter">
-                                <option value="">全部状态</option>
-                                <option value="pending">待处理</option>
-                                <option value="processed">已处理</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="sortOrder">
-                                <option value="desc">最新优先</option>
-                                <option value="asc">最早优先</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-outline-primary w-100" onclick="filterFeedback()">
-                                <i class="bi bi-search"></i>
-                                搜索
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 反馈列表 -->
-        <div class="row">
-            <div class="col-12">
-                <div id="feedbackList">
-                    <div class="text-center p-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">加载中...</span>
-                        </div>
-                        <p class="mt-2">正在加载反馈数据...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 分页 -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <nav aria-label="反馈分页">
-                    <ul class="pagination justify-content-center" id="pagination">
-                        <!-- 分页按钮将通过JavaScript生成 -->
-                    </ul>
-                </nav>
-            </div>
-        </div>
+        </main>
     </div>
 
-    <!-- 查看详情模态框 -->
-    <div class="modal fade" id="feedbackDetailModal" tabindex="-1" aria-labelledby="feedbackDetailModalLabel" aria-hidden="true">
+    <!-- 反馈详情模态框 -->
+    <div class="modal fade" id="detailModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="feedbackDetailModalLabel">反馈详情</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            <div class="modal-content glass-card p-2" style="background: var(--sidebar-bg);">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">反馈详情</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="feedbackDetailBody">
-                    <!-- 详情内容将通过JavaScript填充 -->
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <label class="text-secondary small mb-1">反馈内容</label>
+                        <div class="p-3 rounded-3 bg-dark bg-opacity-50 border border-secondary border-opacity-25" id="modalMessage"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-secondary small mb-1">用户姓名</label>
+                            <p id="modalName" class="fw-bold">-</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-secondary small mb-1">联系邮箱</label>
+                            <p id="modalEmail" class="fw-bold">-</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="markProcessedBtn">
-                        <i class="bi bi-check" aria-hidden="true"></i>
-                        标记为已处理
-                    </button>
-                    <button type="button" class="btn btn-danger" id="deleteFeedbackBtn">
-                        <i class="bi bi-trash" aria-hidden="true"></i>
-                        删除反馈
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-light btn-modern" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary-modern btn-modern" id="markProcessedBtn">标记为已处理</button>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentPage = 1;
-        let currentFeedbackId = null;
-        const pageSize = 10;
+        let currentId = null;
+        const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
 
-        // 页面初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFeedbackList();
-            initEventListeners();
+        document.addEventListener('DOMContentLoaded', loadFeedback);
+
+        async function loadFeedback() {
+            try {
+                const response = await fetch('/admin/feedback/data');
+                const result = await response.json();
+                const tbody = document.getElementById('feedbackTableBody');
+
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(item => `
+                        <tr>
+                            <td class="small text-secondary">${new Date(item.created_at).toLocaleString()}</td>
+                            <td>${item.name || '<span class="text-muted">匿名</span>'}</td>
+                            <td class="small">${item.email || '-'}</td>
+                            <td><div class="message-preview small text-secondary">${item.message}</div></td>
+                            <td>
+                                <span class="badge badge-modern ${item.status === 'processed' ? 'bg-success-subtle' : 'bg-warning-subtle'}">
+                                    ${item.status === 'processed' ? '已处理' : '待处理'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-modern" onclick="showDetail(${item.id})">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-modern ms-1" onclick="deleteFeedback(${item.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-secondary">暂无反馈记录</td></tr>';
+                }
+            } catch (error) {
+                console.error('加载失败:', error);
+            }
+        }
+
+        async function showDetail(id) {
+            try {
+                const response = await fetch(`/admin/feedback/${id}`);
+                const result = await response.json();
+                if (result.success) {
+                    const item = result.data;
+                    currentId = id;
+                    document.getElementById('modalMessage').textContent = item.message;
+                    document.getElementById('modalName').textContent = item.name || '匿名';
+                    document.getElementById('modalEmail').textContent = item.email || '-';
+
+                    const processBtn = document.getElementById('markProcessedBtn');
+                    if (item.status === 'processed') {
+                        processBtn.style.display = 'none';
+                    } else {
+                        processBtn.style.display = 'block';
+                        processBtn.onclick = () => markProcessed(id);
+                    }
+
+                    detailModal.show();
+                }
+            } catch (error) {
+                console.error('获取详情失败:', error);
+            }
+        }
+
+        async function markProcessed(id) {
+            try {
+                const response = await fetch(`/admin/feedback/${id}/processed`, { method: 'PUT' });
+                const result = await response.json();
+                if (result.success) {
+                    detailModal.hide();
+                    loadFeedback();
+                }
+            } catch (error) {
+                console.error('更新失败:', error);
+            }
+        }
+
+        async function deleteFeedback(id) {
+            if (!confirm('确定要删除这条反馈吗？')) return;
+            try {
+                const response = await fetch(`/admin/feedback/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    loadFeedback();
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (confirm('确定要退出登录吗？')) {
+                await fetch('/admin/logout', { method: 'POST' });
+                window.location.href = '/admin/login';
+            }
         });
-
-        // 初始化事件监听
-        function initEventListeners() {
-            // 搜索框回车事件
-            document.getElementById('searchInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    filterFeedback();
-                }
-            });
-
-            // 筛选变化事件
-            document.getElementById('statusFilter').addEventListener('change', filterFeedback);
-            document.getElementById('sortOrder').addEventListener('change', filterFeedback);
-
-            // 模态框事件
-            const modal = document.getElementById('feedbackDetailModal');
-            const modalInstance = new bootstrap.Modal(modal);
-            
-            modal.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                currentFeedbackId = button.getAttribute('data-feedback-id');
-                loadFeedbackDetail(currentFeedbackId);
-            });
-            
-            modal.addEventListener('hidden.bs.modal', function(event) {
-                // 清理模态框数据
-                currentFeedbackId = null;
-                document.getElementById('feedbackDetailBody').innerHTML = '';
-            });
-
-            // 标记已处理按钮
-            document.getElementById('markProcessedBtn').addEventListener('click', function() {
-                markAsProcessed(currentFeedbackId);
-            });
-
-            // 删除按钮
-            document.getElementById('deleteFeedbackBtn').addEventListener('click', function() {
-                if (confirm('确定要删除这条反馈吗？此操作不可撤销。')) {
-                    deleteFeedback(currentFeedbackId);
-                }
-            });
-        }
-
-        // 加载反馈列表
-        async function loadFeedbackList(page = 1) {
-            currentPage = page;
-            
-            try {
-                const params = new URLSearchParams({
-                    page: page,
-                    limit: pageSize,
-                    search: document.getElementById('searchInput').value,
-                    status: document.getElementById('statusFilter').value,
-                    sort: document.getElementById('sortOrder').value
-                });
-
-                const response = await fetch(`/admin/feedback/data?${params}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    renderFeedbackList(result.data);
-                    renderPagination(result.pagination);
-                    updateStats(result.stats);
-                } else {
-                    showError('加载反馈列表失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('加载反馈列表失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 渲染反馈列表
-        function renderFeedbackList(feedbacks) {
-            const container = document.getElementById('feedbackList');
-            
-            if (!feedbacks || feedbacks.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="bi bi-chat-left-text"></i>
-                        <h5>暂无反馈数据</h5>
-                        <p>还没有收到用户反馈，或者当前筛选条件下没有匹配的结果。</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const html = feedbacks.map(feedback => `
-                <div class="feedback-card">
-                    <div class="feedback-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${feedback.name || '匿名用户'}</strong>
-                                ${feedback.email ? `<span class="text-muted">（${feedback.email}）</span>` : ''}
-                            </div>
-                            <div>
-                                <span class="badge ${feedback.status === 'processed' ? 'bg-success' : 'bg-warning'} status-badge">
-                                    ${feedback.status === 'processed' ? '已处理' : '待处理'}
-                                </span>
-                                <span class="text-muted ms-2">
-                                    ${formatDate(feedback.created_at)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="feedback-content">
-                        <p class="mb-0">${truncateText(feedback.message, 150)}</p>
-                    </div>
-                    <div class="feedback-actions">
-                        <button class="btn btn-sm btn-outline-primary" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#feedbackDetailModal"
-                                data-feedback-id="${feedback.id}">
-                            <i class="bi bi-eye"></i>
-                            查看详情
-                        </button>
-                        ${feedback.status !== 'processed' ? `
-                            <button class="btn btn-sm btn-outline-success ms-2" 
-                                    onclick="markAsProcessed(${feedback.id})">
-                                <i class="bi bi-check"></i>
-                                标记已处理
-                            </button>
-                        ` : ''}
-                        <button class="btn btn-sm btn-outline-danger ms-2" 
-                                onclick="confirmDelete(${feedback.id})">
-                            <i class="bi bi-trash"></i>
-                            删除
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = html;
-        }
-
-        // 渲染分页
-        function renderPagination(pagination) {
-            const container = document.getElementById('pagination');
-            
-            if (!pagination || pagination.totalPages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
-
-            let html = '';
-            
-            // 上一页按钮
-            html += `
-                <li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadFeedbackList(${pagination.currentPage - 1})">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-            `;
-
-            // 页码按钮
-            const startPage = Math.max(1, pagination.currentPage - 2);
-            const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
-
-            for (let i = startPage; i <= endPage; i++) {
-                html += `
-                    <li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadFeedbackList(${i})">${i}</a>
-                    </li>
-                `;
-            }
-
-            // 下一页按钮
-            html += `
-                <li class="page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadFeedbackList(${pagination.currentPage + 1})">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            `;
-
-            container.innerHTML = html;
-        }
-
-        // 更新统计信息
-        function updateStats(stats) {
-            if (stats) {
-                document.getElementById('totalCount').textContent = stats.total || 0;
-                document.getElementById('todayCount').textContent = stats.today || 0;
-                document.getElementById('processedCount').textContent = stats.processed || 0;
-                document.getElementById('pendingCount').textContent = stats.pending || 0;
-            }
-        }
-
-        // 筛选反馈
-        function filterFeedback() {
-            loadFeedbackList(1);
-        }
-
-        // 刷新反馈
-        function refreshFeedback() {
-            loadFeedbackList(currentPage);
-        }
-
-        // 加载反馈详情
-        async function loadFeedbackDetail(feedbackId) {
-            try {
-                const response = await fetch(`/admin/feedback/${feedbackId}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    renderFeedbackDetail(result.data);
-                } else {
-                    showError('加载反馈详情失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('加载反馈详情失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 渲染反馈详情
-        function renderFeedbackDetail(feedback) {
-            const container = document.getElementById('feedbackDetailBody');
-            
-            container.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>姓名:</strong>
-                        <p>${feedback.name || '未提供'}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>邮箱:</strong>
-                        <p>${feedback.email || '未提供'}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>提交时间:</strong>
-                        <p>${formatDate(feedback.created_at)}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>状态:</strong>
-                        <p>
-                            <span class="badge ${feedback.status === 'processed' ? 'bg-success' : 'bg-warning'}">
-                                ${feedback.status === 'processed' ? '已处理' : '待处理'}
-                            </span>
-                        </p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <strong>反馈内容:</strong>
-                        <div class="border rounded p-3 mt-2 bg-light">
-                            ${feedback.message.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 标记为已处理
-        async function markAsProcessed(feedbackId) {
-            try {
-                const response = await fetch(`/admin/feedback/${feedbackId}/processed`, {
-                    method: 'PUT'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('已标记为已处理');
-                    loadFeedbackList(currentPage);
-                    
-                    // 关闭模态框
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
-                    if (modal) {
-                        modal.hide();
-                    }
-                } else {
-                    showError('操作失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('标记已处理失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 删除反馈
-        async function deleteFeedback(feedbackId) {
-            try {
-                const response = await fetch(`/admin/feedback/${feedbackId}`, {
-                    method: 'DELETE'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('反馈已删除');
-                    loadFeedbackList(currentPage);
-                    
-                    // 关闭模态框
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
-                    if (modal) {
-                        modal.hide();
-                    }
-                } else {
-                    showError('删除失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('删除反馈失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 确认删除
-        function confirmDelete(feedbackId) {
-            if (confirm('确定要删除这条反馈吗？此操作不可撤销。')) {
-                deleteFeedback(feedbackId);
-            }
-        }
-
-        // 工具函数
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        function truncateText(text, maxLength) {
-            if (text.length <= maxLength) {
-                return text;
-            }
-            return text.substring(0, maxLength) + '...';
-        }
-
-        function showSuccess(message) {
-            // 这里可以集成更好的提示组件
-            alert(message);
-        }
-
-        function showError(message) {
-            // 这里可以集成更好的提示组件
-            alert(message);
-        }
     </script>
 </body>
-</html> 
+</html>

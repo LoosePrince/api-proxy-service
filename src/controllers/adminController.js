@@ -179,6 +179,41 @@ const getDashboardData = (req, res) => {
                     `SELECT AVG(response_time) as avg_time FROM api_logs WHERE created_at >= datetime('now', '-1 day')`,
                     (err, row) => err ? reject(err) : resolve({ avgResponseTime: Math.round(row.avg_time || 0) })
                 );
+            }),
+
+            // 热门代理域名
+            new Promise((resolve, reject) => {
+                db.all(
+                    `SELECT target_url, COUNT(*) as count
+                     FROM api_logs
+                     WHERE created_at >= datetime('now', '-7 days')
+                     GROUP BY target_url
+                     ORDER BY count DESC`,
+                    (err, rows) => {
+                        if (err) return reject(err);
+
+                        // 在内存中聚合域名
+                        const domainMap = new Map();
+                        rows.forEach(r => {
+                            try {
+                                const url = new URL(r.target_url);
+                                const domain = url.hostname;
+                                domainMap.set(domain, (domainMap.get(domain) || 0) + r.count);
+                            } catch (e) {
+                                // 处理非法 URL
+                                const domain = r.target_url.split('/')[0] || 'unknown';
+                                domainMap.set(domain, (domainMap.get(domain) || 0) + r.count);
+                            }
+                        });
+
+                        const topDomains = Array.from(domainMap.entries())
+                            .map(([domain, count]) => ({ domain, count }))
+                            .sort((a, b) => b.count - a.count)
+                            .slice(0, 5);
+
+                        resolve({ topDomains });
+                    }
+                );
             })
         ];
         
@@ -352,11 +387,69 @@ const getSystemStats = (req, res) => {
     }
 };
 
+// 获取日志详情
+const getLogDetail = (req, res) => {
+    const { id } = req.params;
+    db.get('SELECT * FROM api_logs WHERE id = ?', [id], (err, row) => {
+        if (err) return res.status(500).json({ success: false, error: '查询失败' });
+        if (!row) return res.status(404).json({ success: false, error: '未找到' });
+        res.json({ success: true, data: row });
+    });
+};
+
+// 清空日志
+const clearLogs = (req, res) => {
+    db.run('DELETE FROM api_logs', function(err) {
+        if (err) return res.status(500).json({ success: false, error: '清除失败' });
+        res.json({ success: true, message: `已清除 ${this.changes} 条日志记录` });
+    });
+};
+
+// 获取白名单
+const getWhitelist = (req, res) => {
+    db.all('SELECT * FROM whitelist ORDER BY created_at DESC', (err, rows) => {
+        if (err) return res.status(500).json({ success: false, error: '获取失败' });
+        res.json({ success: true, data: rows });
+    });
+};
+
+// 添加到白名单
+const addToWhitelist = (req, res) => {
+    const { domain, description } = req.body;
+    if (!domain) return res.status(400).json({ success: false, error: '域名不能为空' });
+
+    db.run(
+        'INSERT INTO whitelist (domain, description, added_by) VALUES (?, ?, ?)',
+        [domain.toLowerCase(), description, req.session.adminUsername],
+        function(err) {
+            if (err) {
+                if (err.message.includes('UNIQUE')) return res.status(400).json({ success: false, error: '域名已存在' });
+                return res.status(500).json({ success: false, error: '添加失败' });
+            }
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+};
+
+// 从白名单移除
+const removeFromWhitelist = (req, res) => {
+    const { id } = req.params;
+    db.run('DELETE FROM whitelist WHERE id = ?', [id], function(err) {
+        if (err) return res.status(500).json({ success: false, error: '删除失败' });
+        res.json({ success: true });
+    });
+};
+
 module.exports = {
     login,
     logout,
     checkAuth,
     getDashboardData,
     getApiLogs,
-    getSystemStats
+    getSystemStats,
+    getLogDetail,
+    clearLogs,
+    getWhitelist,
+    addToWhitelist,
+    removeFromWhitelist
 }; 

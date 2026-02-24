@@ -1,6 +1,49 @@
 const axios = require('axios');
 const { validateProxyRequest } = require('../utils/validator');
 const { isUrlBlacklisted, filterSensitiveHeaders } = require('../utils/security');
+const { db } = require('../models/database');
+
+// 缓存白名单
+let domainWhitelist = null;
+let lastWhitelistUpdate = 0;
+const WHITELIST_CACHE_TTL = 60000; // 1分钟缓存
+
+const getWhitelist = () => {
+    return new Promise((resolve, reject) => {
+        const now = Date.now();
+        if (domainWhitelist && (now - lastWhitelistUpdate < WHITELIST_CACHE_TTL)) {
+            return resolve(domainWhitelist);
+        }
+
+        db.all('SELECT domain FROM whitelist', [], (err, rows) => {
+            if (err) return resolve(domainWhitelist || []); // 报错则使用旧缓存或空
+            domainWhitelist = rows.map(r => r.domain.toLowerCase());
+            lastWhitelistUpdate = now;
+            resolve(domainWhitelist);
+        });
+    });
+};
+
+const isDomainAllowed = async (url) => {
+    // 如果没有启用白名单限制（环境变量控制），则允许所有
+    if (process.env.WHITELIST_ENABLED !== 'true') return true;
+
+    try {
+        const urlObj = new URL(url);
+        const host = urlObj.hostname.toLowerCase();
+        const whitelist = await getWhitelist();
+
+        // 如果白名单为空且启用了白名单，则拒绝所有
+        if (whitelist.length === 0) return false;
+
+        // 检查域名或其父域名是否在白名单中
+        return whitelist.some(domain => {
+            return host === domain || host.endsWith('.' + domain);
+        });
+    } catch (e) {
+        return false;
+    }
+};
 
 // API中转处理
 const handleProxy = async (req, res) => {
@@ -32,6 +75,15 @@ const handleProxy = async (req, res) => {
             return res.status(403).json({
                 error: '禁止访问',
                 message: '不允许访问该类型的URL'
+            });
+        }
+
+        // 检查域名白名单
+        const isAllowed = await isDomainAllowed(targetUrl);
+        if (!isAllowed) {
+            return res.status(403).json({
+                error: '访问受限',
+                message: '该域名未在允许的白名单中'
             });
         }
         
@@ -155,5 +207,6 @@ const handleOptions = (req, res) => {
 
 module.exports = {
     handleProxy,
-    handleOptions
+    handleOptions,
+    isDomainAllowed
 }; 

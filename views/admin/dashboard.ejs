@@ -6,294 +6,317 @@
     <title>管理仪表板 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/modern-dark.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-        }
-        .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            border-radius: 8px;
-            margin: 4px 0;
-            transition: all 0.3s ease;
-        }
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease;
-        }
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
         .stats-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: white;
+            border-radius: 12px;
+            font-size: 1.25rem;
         }
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            margin-bottom: 2rem;
+        .main-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+        .content-area {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                transition: all 0.3s ease;
+            }
+            .sidebar.show {
+                left: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- 侧边栏 -->
-            <div class="col-md-3 col-lg-2 px-0">
-                <div class="sidebar p-3">
-                    <div class="text-center mb-4">
-                        <h4 class="text-white mb-0">
-                            <i class="bi bi-shield-check"></i>
-                            管理后台
-                        </h4>
-                        <small class="text-white-50">API 中转服务</small>
+    <div class="main-wrapper">
+        <!-- 侧边栏 -->
+        <aside class="sidebar modern-sidebar p-3 d-flex flex-column">
+            <div class="p-3 mb-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                    <i class="bi bi-cpu-fill text-primary"></i>
+                </div>
+                <h5 class="mb-0 fw-bold glow-text">管理后台</h5>
+            </div>
+
+            <nav class="nav flex-column flex-grow-1">
+                <a class="nav-link active" href="/admin/dashboard">
+                    <i class="bi bi-speedometer2 me-2"></i> 仪表板
+                </a>
+                <a class="nav-link" href="/admin/feedback">
+                    <i class="bi bi-chat-square-dots me-2"></i> 反馈管理
+                </a>
+                <a class="nav-link" href="/admin/reports">
+                    <i class="bi bi-flag me-2"></i> 举报管理
+                </a>
+                <a class="nav-link" href="/admin/blacklist">
+                    <i class="bi bi-shield-slash me-2"></i> 黑名单管理
+                </a>
+                <a class="nav-link" href="/admin/whitelist">
+                    <i class="bi bi-shield-check me-2"></i> 白名单管理
+                </a>
+                <a class="nav-link" href="/admin/logs">
+                    <i class="bi bi-terminal me-2"></i> API 日志
+                </a>
+                <a class="nav-link" href="/admin/dashboard?section=system">
+                    <i class="bi bi-info-circle me-2"></i> 系统信息
+                </a>
+            </nav>
+
+            <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
+                <a class="nav-link" href="/" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-2"></i> 返回首页
+                </a>
+                <a class="nav-link text-danger" href="#" id="logoutBtn">
+                    <i class="bi bi-power me-2"></i> 退出登录
+                </a>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="content-area">
+            <header class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h2 class="fw-bold mb-1">管理仪表板</h2>
+                    <p class="text-secondary mb-0">欢迎回来, <%= admin.username %></p>
+                </div>
+                <div class="d-flex gap-3">
+                    <button class="btn btn-outline-light btn-modern" onclick="refreshData()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> 刷新数据
+                    </button>
+                    <button class="btn btn-primary-modern btn-modern d-lg-none" onclick="toggleSidebar()">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 统计卡片 -->
+            <div class="row g-4 mb-5">
+                <div class="col-xl-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-info-subtle">
+                                <i class="bi bi-activity"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="fw-bold mb-0" id="totalApiCalls">-</h3>
+                                <p class="text-secondary small mb-0">总 API 调用</p>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <nav class="nav nav-pills flex-column">
-                        <a class="nav-link active" href="#" data-section="dashboard">
-                            <i class="bi bi-speedometer2 me-2"></i>
-                            仪表板
-                        </a>
-                        <a class="nav-link" href="/admin/feedback">
-                            <i class="bi bi-chat-left-text me-2"></i>
-                            反馈管理
-                        </a>
-                        <a class="nav-link" href="/admin/reports">
-                            <i class="bi bi-flag me-2"></i>
-                            举报管理
-                        </a>
-                        <a class="nav-link" href="/admin/blacklist">
-                            <i class="bi bi-shield-x me-2"></i>
-                            黑名单管理
-                        </a>
-                        <a class="nav-link" href="/admin/logs">
-                            <i class="bi bi-list-ul me-2"></i>
-                            API 日志
-                        </a>
-                        <a class="nav-link" href="#" data-section="system">
-                            <i class="bi bi-gear me-2"></i>
-                            系统信息
-                        </a>
-                        <hr class="text-white-50">
-                        <a class="nav-link" href="/" target="_blank">
-                            <i class="bi bi-house me-2"></i>
-                            返回首页
-                        </a>
-                        <a class="nav-link" href="#" id="logoutBtn">
-                            <i class="bi bi-box-arrow-right me-2"></i>
-                            退出登录
-                        </a>
-                    </nav>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-success-subtle">
+                                <i class="bi bi-lightning-fill"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="fw-bold mb-0" id="todayApiCalls">-</h3>
+                                <p class="text-secondary small mb-0">今日调用</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-warning-subtle">
+                                <i class="bi bi-chat-right-dots-fill"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="fw-bold mb-0" id="totalFeedback">-</h3>
+                                <p class="text-secondary small mb-0">用户反馈</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="glass-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-danger-subtle">
+                                <i class="bi bi-exclamation-octagon-fill"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h3 class="fw-bold mb-0" id="totalReports">-</h3>
+                                <p class="text-secondary small mb-0">举报数量</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 主内容区 -->
-            <div class="col-md-9 col-lg-10 px-0">
-                <div class="main-content p-4">
-                    <!-- 仪表板部分 -->
-                    <div id="dashboard-section">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>管理仪表板</h2>
-                            <button class="btn btn-primary" onclick="refreshData()">
-                                <i class="bi bi-arrow-clockwise"></i>
-                                刷新数据
-                            </button>
-                        </div>
-
-                        <!-- 统计卡片 -->
-                        <div class="row mb-4">
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-primary">
-                                            <i class="bi bi-activity"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="totalApiCalls">-</h3>
-                                            <p class="text-muted mb-0">总API调用</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-success">
-                                            <i class="bi bi-clock"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="todayApiCalls">-</h3>
-                                            <p class="text-muted mb-0">今日调用</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-info">
-                                            <i class="bi bi-chat-dots"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="totalFeedback">-</h3>
-                                            <p class="text-muted mb-0">用户反馈</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-warning">
-                                            <i class="bi bi-flag"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="totalReports">-</h3>
-                                            <p class="text-muted mb-0">举报数量</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 图表区域 -->
-                        <div class="row">
-                            <div class="col-lg-8">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">最近7天 API 调用趋势</h5>
-                                    <canvas id="apiTrendChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">响应状态分布</h5>
-                                    <canvas id="statusChart" width="300" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 系统状态 -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">系统状态</h5>
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <p><strong>平均响应时间:</strong> <span id="avgResponseTime">-</span>ms</p>
-                                            <p><strong>服务运行时间:</strong> <span id="uptime">-</span></p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <p><strong>今日反馈:</strong> <span id="todayFeedback">-</span></p>
-                                            <p><strong>今日举报:</strong> <span id="todayReports">-</span></p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <p><strong>最后更新:</strong> <span id="lastUpdate">-</span></p>
-                                            <p><strong>系统状态:</strong> <span class="badge bg-success">正常运行</span></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- 图表 -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-8">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="fw-bold mb-4">最近 7 天 API 调用趋势</h5>
+                        <canvas id="apiTrendChart" style="max-height: 350px;"></canvas>
                     </div>
-
-                    <!-- 其他部分的占位符 -->
-                    <div id="feedback-section" style="display: none;">
-                        <h2>反馈管理</h2>
-                        <p>反馈管理功能开发中...</p>
-                    </div>
-
-                    <div id="reports-section" style="display: none;">
-                        <h2>举报管理</h2>
-                        <p>举报管理功能开发中...</p>
-                    </div>
-
-                    <div id="logs-section" style="display: none;">
-                        <h2>API 日志</h2>
-                        <p>API日志功能开发中...</p>
-                    </div>
-
-                    <div id="system-section" style="display: none;">
-                        <h2>系统信息</h2>
-                        <p>系统信息功能开发中...</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="fw-bold mb-4">响应状态分布</h5>
+                        <canvas id="statusChart" style="max-height: 350px;"></canvas>
                     </div>
                 </div>
             </div>
+
+            <!-- 仪表板视图 -->
+            <div id="dashboard-view">
+                <!-- 热门目标 & 实时状态 -->
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="glass-card p-4 h-100">
+                            <h5 class="fw-bold mb-4">热门代理域名 (Top 5)</h5>
+                            <div id="topDomainsContainer">
+                                <p class="text-secondary text-center py-5">暂无数据</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="glass-card p-4 h-100">
+                            <h5 class="fw-bold mb-4">实时运行状态</h5>
+                            <div class="list-group list-group-flush bg-transparent">
+                                <div class="list-group-item bg-transparent border-secondary border-opacity-25 px-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-secondary">平均响应时间</span>
+                                        <span class="fw-bold" id="avgResponseTime">- ms</span>
+                                    </div>
+                                </div>
+                                <div class="list-group-item bg-transparent border-secondary border-opacity-25 px-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-secondary">今日反馈/举报</span>
+                                        <span class="fw-bold"><span id="todayFeedback">-</span> / <span id="todayReports">-</span></span>
+                                    </div>
+                                </div>
+                                <div class="list-group-item bg-transparent border-secondary border-opacity-25 px-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-secondary">最后更新时间</span>
+                                        <span class="fw-bold small" id="lastUpdate">-</span>
+                                    </div>
+                                </div>
+                                <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-secondary">服务健康度</span>
+                                        <span class="badge bg-success-subtle badge-modern">正常运行</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统信息视图 (初始隐藏) -->
+            <div id="system-view" style="display: none;">
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-4">服务器硬件信息</h5>
+                    <div class="row g-4" id="serverInfoContainer">
+                        <!-- 加载中 -->
+                    </div>
+                </div>
+                <div class="glass-card p-4">
+                    <h5 class="fw-bold mb-4">运行时环境</h5>
+                    <div class="row g-4" id="runtimeInfoContainer">
+                        <!-- 加载中 -->
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-    </div>
-    
+
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         let apiTrendChart, statusChart;
 
-        // 初始化页面
         document.addEventListener('DOMContentLoaded', function() {
             initCharts();
-            loadDashboardData();
-            initNavigation();
+
+            // 处理 URL 参数切换视图
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('section') === 'system') {
+                showSystemView();
+            } else {
+                loadDashboardData();
+            }
         });
 
-        // 导航功能
-        function initNavigation() {
-            const navLinks = document.querySelectorAll('.sidebar .nav-link[data-section]');
-            const sections = document.querySelectorAll('[id$="-section"]');
-            
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // 更新活动状态
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // 显示对应部分
-                    const sectionId = this.dataset.section + '-section';
-                    sections.forEach(section => {
-                        section.style.display = section.id === sectionId ? 'block' : 'none';
-                    });
-                });
-            });
-
-            // 退出登录
-            document.getElementById('logoutBtn').addEventListener('click', function(e) {
-                e.preventDefault();
-                if (confirm('确定要退出登录吗？')) {
-                    logout();
-                }
-            });
+        function showSystemView() {
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('system-view').style.display = 'block';
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector('.sidebar .nav-link[href*="system"]').classList.add('active');
+            loadSystemInfo();
         }
 
-        // 初始化图表
-        function initCharts() {
-            // 销毁现有图表（如果存在）
-            if (apiTrendChart) {
-                apiTrendChart.destroy();
-            }
-            if (statusChart) {
-                statusChart.destroy();
-            }
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch('/admin/system');
+                const result = await response.json();
+                if (result.success) {
+                    const data = result.data;
+                    document.getElementById('serverInfoContainer').innerHTML = `
+                        <div class="col-md-3">
+                            <label class="text-secondary small">操作系统</label>
+                            <p class="fw-bold">${data.system.platform} (${data.system.arch})</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-secondary small">CPU 核心数</label>
+                            <p class="fw-bold">${data.system.cpus}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-secondary small">系统运行时间</label>
+                            <p class="fw-bold">${data.system.uptime}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-secondary small">空闲内存</label>
+                            <p class="fw-bold">${data.system.freeMemory} / ${data.system.totalMemory}</p>
+                        </div>
+                    `;
+                    document.getElementById('runtimeInfoContainer').innerHTML = `
+                        <div class="col-md-4">
+                            <label class="text-secondary small">Node.js 版本</label>
+                            <p class="fw-bold">${data.node.version}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-secondary small">服务运行时长</label>
+                            <p class="fw-bold">${data.node.uptime}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-secondary small">内存占用 (Heap)</label>
+                            <p class="fw-bold">${data.node.memory.heapUsed} / ${data.node.memory.heapTotal}</p>
+                        </div>
+                    `;
+                }
+            } catch (e) { console.error(e); }
+        }
 
-            // API趋势图表
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                }
+            };
+
             const apiTrendCtx = document.getElementById('apiTrendChart').getContext('2d');
             apiTrendChart = new Chart(apiTrendCtx, {
                 type: 'line',
@@ -302,30 +325,21 @@
                     datasets: [{
                         label: 'API 调用次数',
                         data: [],
-                        borderColor: 'rgb(102, 126, 234)',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
                         tension: 0.4,
                         fill: true
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
+                    ...chartOptions,
                     scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
                     }
                 }
             });
 
-            // 状态分布图表
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
@@ -333,126 +347,94 @@
                     labels: ['成功', '客户端错误', '服务器错误', '其他'],
                     datasets: [{
                         data: [0, 0, 0, 0],
-                        backgroundColor: [
-                            '#28a745',
-                            '#ffc107',
-                            '#dc3545',
-                            '#6c757d'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#fff'
+                        backgroundColor: ['#34d399', '#fbbf24', '#f87171', '#94a3b8'],
+                        borderWidth: 0
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    return label + ': ' + value + '个请求';
-                                }
-                            }
-                        }
-                    }
-                }
+                options: chartOptions
             });
         }
 
-        // 加载仪表板数据
         async function loadDashboardData() {
             try {
                 const response = await fetch('/admin/dashboard/data');
                 const result = await response.json();
-                
                 if (result.success) {
-                    console.log('仪表板数据:', result.data);
                     updateStats(result.data);
                     updateCharts(result.data);
-                } else {
-                    console.error('获取数据失败:', result.error);
+                    updateTopDomains(result.data.topDomains || []);
                 }
             } catch (error) {
-                console.error('加载仪表板数据失败:', error);
+                console.error('加载数据失败:', error);
             }
         }
 
-        // 更新统计数据
         function updateStats(data) {
             document.getElementById('totalApiCalls').textContent = data.totalApiCalls || 0;
             document.getElementById('todayApiCalls').textContent = data.todayApiCalls || 0;
             document.getElementById('totalFeedback').textContent = data.totalFeedback || 0;
             document.getElementById('totalReports').textContent = data.totalReports || 0;
-            document.getElementById('avgResponseTime').textContent = data.avgResponseTime || 0;
+            document.getElementById('avgResponseTime').textContent = (data.avgResponseTime || 0) + ' ms';
             document.getElementById('todayFeedback').textContent = data.todayFeedback || 0;
             document.getElementById('todayReports').textContent = data.todayReports || 0;
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('zh-CN');
         }
 
-        // 更新图表
         function updateCharts(data) {
-            // 更新趋势图表
-            if (data.weeklyTrend && Array.isArray(data.weeklyTrend)) {
-                const labels = data.weeklyTrend.map(item => item.date);
-                const values = data.weeklyTrend.map(item => item.count);
-                
-                // 清空现有数据并替换
-                apiTrendChart.data.labels = labels;
-                apiTrendChart.data.datasets[0].data = values;
+            if (data.weeklyTrend) {
+                apiTrendChart.data.labels = data.weeklyTrend.map(item => item.date);
+                apiTrendChart.data.datasets[0].data = data.weeklyTrend.map(item => item.count);
                 apiTrendChart.update();
             }
-
-            // 更新状态图表
-            if (data.statusStats && Array.isArray(data.statusStats)) {
-                const statusData = [0, 0, 0, 0]; // 成功、客户端错误、服务器错误、其他
-                
+            if (data.statusStats) {
+                const statusData = [0, 0, 0, 0];
                 data.statusStats.forEach(stat => {
-                    switch(stat.status_group) {
-                        case 'success':
-                            statusData[0] = stat.count;
-                            break;
-                        case 'client_error':
-                            statusData[1] = stat.count;
-                            break;
-                        case 'server_error':
-                            statusData[2] = stat.count;
-                            break;
-                        default:
-                            statusData[3] = stat.count;
-                    }
+                    if (stat.status_group === 'success') statusData[0] = stat.count;
+                    else if (stat.status_group === 'client_error') statusData[1] = stat.count;
+                    else if (stat.status_group === 'server_error') statusData[2] = stat.count;
+                    else statusData[3] = stat.count;
                 });
-                
-                // 完全替换数据而不是添加
                 statusChart.data.datasets[0].data = statusData;
-                statusChart.update('none'); // 使用 'none' 动画模式避免重复动画
-            } else {
-                // 如果没有数据，设置为默认值
-                statusChart.data.datasets[0].data = [0, 0, 0, 0];
-                statusChart.update('none');
+                statusChart.update();
             }
         }
 
-        // 刷新数据
+        function updateTopDomains(domains) {
+            const container = document.getElementById('topDomainsContainer');
+            if (domains.length === 0) {
+                container.innerHTML = '<p class="text-secondary text-center py-5">暂无数据</p>';
+                return;
+            }
+
+            const maxCount = Math.max(...domains.map(d => d.count));
+            container.innerHTML = domains.map(d => `
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-truncate small" style="max-width: 80%;">${d.domain}</span>
+                        <span class="fw-bold small">${d.count}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: ${(d.count / maxCount * 100)}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function refreshData() {
-            console.log('刷新仪表板数据...');
             loadDashboardData();
         }
 
-        // 退出登录
-        async function logout() {
-            try {
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (confirm('确定要退出登录吗？')) {
                 await fetch('/admin/logout', { method: 'POST' });
                 window.location.href = '/admin/login';
-            } catch (error) {
-                console.error('退出登录失败:', error);
             }
-        }
+        });
     </script>
 </body>
-</html> 
+</html>
