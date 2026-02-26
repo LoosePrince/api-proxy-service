@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // 验证管理员认证
 const authenticateAdmin = (req, res, next) => {

@@ -378,8 +378,7 @@
             // 上一页按钮
             html += `
                 <li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadLogsList(${pagination.currentPage - 1})">
-                        <i class="bi bi-chevron-left"></i>
+                    <a class="page-link" href="#" onclick="loadLogsList(${pagination.currentPage - 1})">(<i class="bi bi-chevron-left"></i>)
                     </a>
                 </li>
             `;
@@ -391,7 +390,7 @@
             for (let i = startPage; i <= endPage; i++) {
                 html += `
                     <li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadLogsList(${i})">${i}</a>
+                        <a class="page-link" href="#" onclick="loadLogsList(${i})"><i>${i}</i></a>
                     </li>
                 `;
             }
@@ -399,8 +398,7 @@
             // 下一页按钮
             html += `
                 <li class="page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadLogsList(${pagination.currentPage + 1})">
-                        <i class="bi bi-chevron-right"></i>
+                    <a class="page-link" href="#" onclick="loadLogsList(${pagination.currentPage + 1})">(<i class="bi bi-chevron-right"></i>)
                     </a>
                 </li>
             `;
@@ -592,4 +590,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

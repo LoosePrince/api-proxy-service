@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - API中转服务管理后台</title>
+    <title>黑名单管理 - API中转服务管理后台</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -82,7 +82,7 @@
         <div class="navbar-nav">
             <div class="nav-item text-nowrap">
                 <span class="navbar-text px-3">
-                    <i class="bi bi-person-circle"></i> <%= admin.username %>
+                    <i class="bi bi-person-circle"></i> 管理员
                     <a class="nav-link d-inline" href="#" onclick="logout()">退出</a>
                 </span>
             </div>
@@ -409,7 +409,7 @@
             for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
                 html += `
                     <li class="page-item ${i === page ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadBlacklistData(${i})">${i}</a>
+                        <a class="page-link" href="#" onclick="loadBlacklistData(${i})"><i>${i}</i></a>
                     </li>
                 `;
             }
