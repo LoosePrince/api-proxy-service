@@ -71,6 +71,178 @@ router.get('/system', (req, res) => {
     res.sendFile(path.join(__dirname, '../../public/admin/dashboard.html'));
 });
 
+// 仪表板数据API
+router.get('/dashboard/data', getDashboardData);
+
+// API日志数据API
+router.get('/logs/data', getApiLogs);
+
+// 系统统计API
+router.get('/system/stats', getSystemStats);
+
+// 反馈管理API
+router.get('/feedback/data', getFeedback);
+router.get('/feedback/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { db } = require('../models/database');
+        
+        db.get(
+            'SELECT * FROM feedback WHERE id = ?',
+            [id],
+            (err, row) => {
+                if (err) {
+                    console.error('获取反馈详情失败:', err);
+                    return res.status(500).json({
+                        success: false,
+                        error: '查询失败'
+                    });
+                }
+                
+                if (!row) {
+                    return res.status(404).json({
+                        success: false,
+                        error: '反馈不存在'
+                    });
+                }
+                
+                res.json({
+                    success: true,
+                    data: row
+                });
+            }
+        );
+    } catch (error) {
+        console.error('获取反馈详情失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '查询失败'
+        });
+    }
+});
+router.delete('/feedback/:id', deleteFeedback);
+router.put('/feedback/:id/processed', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { db } = require('../models/database');
+        
+        db.run(
+            'UPDATE feedback SET status = ? WHERE id = ?',
+            ['processed', id],
+            function(err) {
+                if (err) {
+                    console.error('标记反馈已处理失败:', err);
+                    return res.status(500).json({
+                        success: false,
+                        error: '操作失败'
+                    });
+                }
+                
+                if (this.changes > 0) {
+                    res.json({
+                        success: true,
+                        message: '已标记为已处理'
+                    });
+                } else {
+                    res.status(404).json({
+                        success: false,
+                        error: '反馈不存在'
+                    });
+                }
+            }
+        );
+    } catch (error) {
+        console.error('标记反馈已处理失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '操作失败'
+        });
+    }
+});
+
+// 举报管理API
+router.get('/reports/data', getReports);
+router.get('/reports/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { db } = require('../models/database');
+        
+        db.get(
+            'SELECT * FROM reports WHERE id = ?',
+            [id],
+            (err, row) => {
+                if (err) {
+                    console.error('获取举报详情失败:', err);
+                    return res.status(500).json({
+                        success: false,
+                        error: '查询失败'
+                    });
+                }
+                
+                if (!row) {
+                    return res.status(404).json({
+                        success: false,
+                        error: '举报不存在'
+                    });
+                }
+                
+                res.json({
+                    success: true,
+                    data: row
+                });
+            }
+        );
+    } catch (error) {
+        console.error('获取举报详情失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '查询失败'
+        });
+    }
+});
+router.delete('/reports/:id', deleteReport);
+router.put('/reports/:id/processed', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { db } = require('../models/database');
+        
+        db.run(
+            'UPDATE reports SET status = ? WHERE id = ?',
+            ['processed', id],
+            function(err) {
+                if (err) {
+                    console.error('标记举报已处理失败:', err);
+                    return res.status(500).json({
+                        success: false,
+                        error: '操作失败'
+                    });
+                }
+                
+                if (this.changes > 0) {
+                    res.json({
+                        success: true,
+                        message: '已标记为已处理'
+                    });
+                } else {
+                    res.status(404).json({
+                        success: false,
+                        error: '举报不存在'
+                    });
+                }
+            }
+        );
+    } catch (error) {
+        console.error('标记举报已处理失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '操作失败'
+        });
+    }
+});
+
+// 举报加入黑名单
+router.post('/reports/:id/blacklist', addReportToBlacklist);
+
 // 黑名单管理API
 router.get('/blacklist/data', async (req, res) => {
     try {

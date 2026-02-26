@@ -22,6 +22,7 @@ app.use(helmet({
             defaultSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
             scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+            scriptSrcAttr: ["'unsafe-inline'"],
             fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'"]
@@ -76,6 +77,9 @@ app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 // Bootstrap 相关静态资源
 app.use('/bootstrap', express.static(path.join(__dirname, 'node_modules', 'bootstrap', 'dist')));
 app.use('/bootstrap-icons', express.static(path.join(__dirname, 'node_modules', 'bootstrap-icons', 'font')));
+
+// Chart.js 静态资源
+app.use('/chart.js', express.static(path.join(__dirname, 'node_modules', 'chart.js', 'dist')));
 
 // 路由
 const apiRoutes = require('./src/routes/api');

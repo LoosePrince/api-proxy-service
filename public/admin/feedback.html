@@ -7,101 +7,586 @@
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .feedback-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
+        :root {
+            --color-primary: #111114;
+            --color-accent: #93C3F2;
+            --color-bg: #FAFBFC;
+            --color-bg-secondary: #F5F7FA;
+            --color-surface: #FFFFFF;
+            --color-text: #111114;
+            --color-text-secondary: #6B7280;
+            --color-border: #E5E7EB;
+            --shadow-sm: 0 1px 2px rgba(17, 17, 20, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(17, 17, 20, 0.08), 0 2px 4px -1px rgba(17, 17, 20, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(17, 17, 20, 0.08), 0 4px 6px -2px rgba(17, 17, 20, 0.04);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --sidebar-width: 260px;
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--color-bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 布局容器 */
+        .admin-layout {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧边栏 */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--color-primary);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .sidebar-brand i {
+            color: var(--color-accent);
+            font-size: 1.5rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0.75rem;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 2px;
+        }
+
+        .nav-item {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            margin: 0.25rem 0;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: var(--color-bg-secondary);
+            color: var(--color-primary);
+        }
+
+        .nav-link.active {
+            background: rgba(147, 195, 242, 0.15);
+            color: var(--color-primary);
+        }
+
+        .nav-link i {
+            font-size: 1.125rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 0.75rem;
+            border-top: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: 0.5rem 0.75rem;
+        }
+
+        /* 右侧主内容区 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: var(--color-bg);
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: var(--color-bg);
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 4px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: var(--color-text-secondary);
+        }
+
+        .content-wrapper {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .page-header h1 {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin: 0;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .stats-card h4 {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stats-card small {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* 筛选区域 */
+        .filter-section {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 1.5px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 0.625rem 0.875rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(147, 195, 242, 0.2);
+        }
+
+        /* 反馈卡片 */
+        .feedback-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            margin-bottom: 1rem;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .feedback-card:hover {
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-md);
             transform: translateY(-2px);
         }
+
         .feedback-header {
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid var(--color-border);
             padding: 1rem 1.5rem;
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
         }
+
         .feedback-content {
             padding: 1.5rem;
         }
+
         .feedback-actions {
             padding: 1rem 1.5rem;
-            border-top: 1px solid #e9ecef;
-            background: #f8f9fa;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
         }
+
         .status-badge {
             font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
+            padding: 0.35rem 0.75rem;
+            font-weight: 500;
+            border-radius: 6px;
         }
+
+        .badge.bg-success {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: #065F46;
+        }
+
+        .badge.bg-warning {
+            background: rgba(245, 158, 11, 0.15) !important;
+            color: #92400E;
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: var(--color-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.625rem 1.25rem;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            background: #2a2a30;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline-secondary {
+            border: 1.5px solid var(--color-border);
+            color: var(--color-text-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-outline-secondary:hover {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-text-secondary);
+            color: var(--color-primary);
+        }
+
+        .btn-outline-primary {
+            border: 1.5px solid var(--color-primary);
+            color: var(--color-primary);
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-outline-success {
+            border: 1.5px solid #10B981;
+            color: #10B981;
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-outline-success:hover {
+            background: #10B981;
+            color: white;
+        }
+
+        .btn-outline-danger {
+            border: 1.5px solid #EF4444;
+            color: #EF4444;
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-outline-danger:hover {
+            background: #EF4444;
+            color: white;
+        }
+
+        /* 空状态 */
         .empty-state {
             text-align: center;
-            padding: 3rem;
-            color: #6c757d;
+            padding: 4rem 2rem;
+            color: var(--color-text-secondary);
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
         }
+
         .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--color-accent);
+            opacity: 0.6;
+        }
+
+        /* 分页 */
+        .pagination .page-link {
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 0.5rem 0.875rem;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border);
+            color: var(--color-primary);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        /* 模态框 */
+        .modal-content {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .text-muted {
+            color: var(--color-text-secondary) !important;
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1000;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .content-wrapper {
+                padding: 1rem;
+                padding-top: 4rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 遮罩层 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-overlay.open {
+                display: block;
+            }
         }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- 返回按钮 -->
-            <div class="col-12 p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="/admin/dashboard" class="btn btn-outline-secondary me-3">
-                            <i class="bi bi-arrow-left"></i>
-                            返回仪表板
+<body>
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+        <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+    </button>
+
+    <!-- 遮罩层 -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="admin-layout">
+        <!-- 左侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <i class="bi bi-shield-check"></i>
+                    <span>管理后台</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>仪表板</span>
                         </a>
-                        <h2 class="d-inline-block mb-0">反馈管理</h2>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin/feedback">
+                            <i class="bi bi-chat-left-text"></i>
+                            <span>反馈管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/reports">
+                            <i class="bi bi-flag"></i>
+                            <span>举报管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/blacklist">
+                            <i class="bi bi-shield-x"></i>
+                            <span>黑名单管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/logs">
+                            <i class="bi bi-list-ul"></i>
+                            <span>API 日志</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="sidebar-divider"></div>
+
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/" target="_blank">
+                            <i class="bi bi-house"></i>
+                            <span>返回首页</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>退出登录</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- 右侧主内容区 -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <h1>反馈管理</h1>
+                    <button class="btn btn-primary" onclick="refreshFeedback()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        刷新
+                    </button>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <h4 id="totalCount">-</h4>
+                        <small>总反馈数</small>
                     </div>
-                    <div>
-                        <button class="btn btn-primary" onclick="refreshFeedback()">
-                            <i class="bi bi-arrow-clockwise"></i>
-                            刷新
-                        </button>
+                    <div class="stats-card">
+                        <h4 class="text-success" id="todayCount">-</h4>
+                        <small>今日新增</small>
+                    </div>
+                    <div class="stats-card">
+                        <h4 class="text-info" id="processedCount">-</h4>
+                        <small>已处理</small>
+                    </div>
+                    <div class="stats-card">
+                        <h4 class="text-warning" id="pendingCount">-</h4>
+                        <small>待处理</small>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 统计信息 -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="bg-white rounded p-3 shadow-sm">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <h4 class="text-primary" id="totalCount">-</h4>
-                            <small class="text-muted">总反馈数</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-success" id="todayCount">-</h4>
-                            <small class="text-muted">今日新增</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-info" id="processedCount">-</h4>
-                            <small class="text-muted">已处理</small>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-warning" id="pendingCount">-</h4>
-                            <small class="text-muted">待处理</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 筛选和搜索 -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="bg-white rounded p-3 shadow-sm">
+                <!-- 筛选和搜索 -->
+                <div class="filter-section">
                     <div class="row align-items-center">
                         <div class="col-md-4">
-                            <input type="text" class="form-control" id="searchInput" 
+                            <input type="text" class="form-control" id="searchInput"
                                    placeholder="搜索反馈内容或邮箱...">
                         </div>
                         <div class="col-md-3">
@@ -125,12 +610,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 反馈列表 -->
-        <div class="row">
-            <div class="col-12">
+                <!-- 反馈列表 -->
                 <div id="feedbackList">
                     <div class="text-center p-5">
                         <div class="spinner-border text-primary" role="status">
@@ -139,19 +620,15 @@
                         <p class="mt-2">正在加载反馈数据...</p>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 分页 -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <nav aria-label="反馈分页">
+                <!-- 分页 -->
+                <nav aria-label="反馈分页" class="mt-4">
                     <ul class="pagination justify-content-center" id="pagination">
                         <!-- 分页按钮将通过JavaScript生成 -->
                     </ul>
                 </nav>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- 查看详情模态框 -->
@@ -179,7 +656,7 @@
             </div>
         </div>
     </div>
-    
+
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentPage = 1;
@@ -208,13 +685,13 @@
             // 模态框事件
             const modal = document.getElementById('feedbackDetailModal');
             const modalInstance = new bootstrap.Modal(modal);
-            
+
             modal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
                 currentFeedbackId = button.getAttribute('data-feedback-id');
                 loadFeedbackDetail(currentFeedbackId);
             });
-            
+
             modal.addEventListener('hidden.bs.modal', function(event) {
                 // 清理模态框数据
                 currentFeedbackId = null;
@@ -237,7 +714,7 @@
         // 加载反馈列表
         async function loadFeedbackList(page = 1) {
             currentPage = page;
-            
+
             try {
                 const params = new URLSearchParams({
                     page: page,
@@ -266,7 +743,7 @@
         // 渲染反馈列表
         function renderFeedbackList(feedbacks) {
             const container = document.getElementById('feedbackList');
-            
+
             if (!feedbacks || feedbacks.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -300,21 +777,23 @@
                         <p class="mb-0">${truncateText(feedback.message, 150)}</p>
                     </div>
                     <div class="feedback-actions">
-                        <button class="btn btn-sm btn-outline-primary" 
-                                data-bs-toggle="modal" 
+                        <button class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal"
                                 data-bs-target="#feedbackDetailModal"
                                 data-feedback-id="${feedback.id}">
                             <i class="bi bi-eye"></i>
                             查看详情
                         </button>
                         ${feedback.status !== 'processed' ? `
-                            <button class="btn btn-sm btn-outline-success ms-2" 
-                                    onclick="markAsProcessed(${feedback.id})">(<i class="bi bi-check"></i>)
+                            <button class="btn btn-sm btn-outline-success ms-2"
+                                    onclick="markAsProcessed(${feedback.id})">
+                                    <i class="bi bi-check"></i>
                                     标记已处理
                             </button>
                         ` : ''}
-                        <button class="btn btn-sm btn-outline-danger ms-2" 
-                                onclick="confirmDelete(${feedback.id})">(<i class="bi bi-trash"></i>)
+                        <button class="btn btn-sm btn-outline-danger ms-2"
+                                onclick="confirmDelete(${feedback.id})">
+                                <i class="bi bi-trash"></i>
                                 删除
                         </button>
                     </div>
@@ -327,38 +806,41 @@
         // 渲染分页
         function renderPagination(pagination) {
             const container = document.getElementById('pagination');
-            
+
             if (!pagination || pagination.totalPages <= 1) {
                 container.innerHTML = '';
                 return;
             }
 
             let html = '';
-            
+
             // 上一页按钮
             html += `
                 <li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadFeedbackList(${pagination.currentPage - 1})">(<i class="bi bi-chevron-left"></i>)
+                    <a class="page-link" href="#" onclick="loadFeedbackList(${pagination.currentPage - 1})"><i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
             `;
 
             // 页码按钮
-            const startPage = Math.max(1, pagination.currentPage - 2);
-            const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
-
-            for (let i = startPage; i <= endPage; i++) {
-                html += `
-                    <li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadFeedbackList(${i})"><i>${i}</i></a>
-                    </li>
-                `;
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                if (i === 1 || i === pagination.totalPages || 
+                    (i >= pagination.currentPage - 2 && i <= pagination.currentPage + 2)) {
+                    html += `
+                        <li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="loadFeedbackList(${i})">${i}</a>
+                        </li>
+                    `;
+                } else if (i === pagination.currentPage - 3 || i === pagination.currentPage + 3) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
             }
 
             // 下一页按钮
             html += `
                 <li class="page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadFeedbackList(${pagination.currentPage + 1})">(<i class="bi bi-chevron-right"></i>)
+                    <a class="page-link" href="#" onclick="loadFeedbackList(${pagination.currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
             `;
@@ -376,6 +858,131 @@
             }
         }
 
+        // 加载反馈详情
+        async function loadFeedbackDetail(id) {
+            try {
+                const response = await fetch(`/admin/feedback/${id}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const feedback = result.data;
+                    const modalBody = document.getElementById('feedbackDetailBody');
+
+                    modalBody.innerHTML = `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">提交者</label>
+                            <p>${feedback.name || '匿名用户'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">邮箱</label>
+                            <p>${feedback.email || '未提供'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">提交时间</label>
+                            <p>${formatDate(feedback.created_at)}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">状态</label>
+                            <p>
+                                <span class="badge ${feedback.status === 'processed' ? 'bg-success' : 'bg-warning'}">
+                                    ${feedback.status === 'processed' ? '已处理' : '待处理'}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">反馈内容</label>
+                            <div class="p-3 bg-light rounded">
+                                ${feedback.message}
+                            </div>
+                        </div>
+                    `;
+
+                    // 如果已处理，隐藏标记已处理按钮
+                    const markBtn = document.getElementById('markProcessedBtn');
+                    if (feedback.status === 'processed') {
+                        markBtn.style.display = 'none';
+                    } else {
+                        markBtn.style.display = 'inline-block';
+                    }
+                } else {
+                    document.getElementById('feedbackDetailBody').innerHTML = `
+                        <div class="alert alert-danger">加载详情失败：${result.error}</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载反馈详情失败:', error);
+                document.getElementById('feedbackDetailBody').innerHTML = `
+                    <div class="alert alert-danger">网络错误，请稍后重试</div>
+                `;
+            }
+        }
+
+        // 标记为已处理
+        async function markAsProcessed(id) {
+            try {
+                const response = await fetch(`/admin/feedback/${id}/processed`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    // 刷新列表
+                    loadFeedbackList(currentPage);
+                    showSuccess('已标记为已处理');
+                } else {
+                    showError('操作失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('标记已处理失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
+        // 确认删除
+        function confirmDelete(id) {
+            if (confirm('确定要删除这条反馈吗？此操作不可撤销。')) {
+                deleteFeedback(id);
+            }
+        }
+
+        // 删除反馈
+        async function deleteFeedback(id) {
+            try {
+                const response = await fetch(`/admin/feedback/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    // 刷新列表
+                    loadFeedbackList(currentPage);
+                    showSuccess('反馈已删除');
+                } else {
+                    showError('删除失败：' + result.error);
+                }
+            } catch (error) {
+                console.error('删除反馈失败:', error);
+                showError('网络错误，请稍后重试');
+            }
+        }
+
         // 筛选反馈
         function filterFeedback() {
             loadFeedbackList(1);
@@ -386,125 +993,7 @@
             loadFeedbackList(currentPage);
         }
 
-        // 加载反馈详情
-        async function loadFeedbackDetail(feedbackId) {
-            try {
-                const response = await fetch(`/admin/feedback/${feedbackId}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    renderFeedbackDetail(result.data);
-                } else {
-                    showError('加载反馈详情失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('加载反馈详情失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 渲染反馈详情
-        function renderFeedbackDetail(feedback) {
-            const container = document.getElementById('feedbackDetailBody');
-            
-            container.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>姓名:</strong>
-                        <p>${feedback.name || '未提供'}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>邮箱:</strong>
-                        <p>${feedback.email || '未提供'}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>提交时间:</strong>
-                        <p>${formatDate(feedback.created_at)}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>状态:</strong>
-                        <p>
-                            <span class="badge ${feedback.status === 'processed' ? 'bg-success' : 'bg-warning'}">
-                                ${feedback.status === 'processed' ? '已处理' : '待处理'}
-                            </span>
-                        </p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <strong>反馈内容:</strong>
-                        <div class="border rounded p-3 mt-2 bg-light">
-                            ${feedback.message.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 标记为已处理
-        async function markAsProcessed(feedbackId) {
-            try {
-                const response = await fetch(`/admin/feedback/${feedbackId}/processed`, {
-                    method: 'PUT'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('已标记为已处理');
-                    loadFeedbackList(currentPage);
-                    
-                    // 关闭模态框
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
-                    if (modal) {
-                        modal.hide();
-                    }
-                } else {
-                    showError('操作失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('标记已处理失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 删除反馈
-        async function deleteFeedback(feedbackId) {
-            try {
-                const response = await fetch(`/admin/feedback/${feedbackId}`, {
-                    method: 'DELETE'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccess('反馈已删除');
-                    loadFeedbackList(currentPage);
-                    
-                    // 关闭模态框
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('feedbackDetailModal'));
-                    if (modal) {
-                        modal.hide();
-                    }
-                } else {
-                    showError('删除失败：' + result.error);
-                }
-            } catch (error) {
-                console.error('删除反馈失败:', error);
-                showError('网络错误，请稍后重试');
-            }
-        }
-
-        // 确认删除
-        function confirmDelete(feedbackId) {
-            if (confirm('确定要删除这条反馈吗？此操作不可撤销。')) {
-                deleteFeedback(feedbackId);
-            }
-        }
-
-        // 工具函数
+        // 格式化日期
         function formatDate(dateString) {
             const date = new Date(dateString);
             return date.toLocaleString('zh-CN', {
@@ -516,21 +1005,54 @@
             });
         }
 
+        // 截断文本
         function truncateText(text, maxLength) {
-            if (text.length <= maxLength) {
-                return text;
-            }
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
             return text.substring(0, maxLength) + '...';
         }
 
-        function showSuccess(message) {
-            // 这里可以集成更好的提示组件
+        // 显示错误信息
+        function showError(message) {
             alert(message);
         }
 
-        function showError(message) {
-            // 这里可以集成更好的提示组件
+        // 显示成功信息
+        function showSuccess(message) {
             alert(message);
+        }
+
+        // 移动端侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // 退出登录
+        async function logout() {
+            if (!confirm('确定要退出登录吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = '/admin/login';
+                } else {
+                    alert('退出登录失败: ' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('退出登录失败:', error);
+                window.location.href = '/admin/login';
+            }
         }
     </script>
 </body>

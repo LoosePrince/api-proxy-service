@@ -6,242 +6,632 @@
     <title>管理仪表板 - API 中转服务</title>
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-    <script src="/node_modules/chart.js/dist/chart.umd.min.js"></script>
+    <script src="/chart.js/chart.umd.js"></script>
     <style>
+        :root {
+            --color-primary: #111114;
+            --color-accent: #93C3F2;
+            --color-bg: #FAFBFC;
+            --color-bg-secondary: #F5F7FA;
+            --color-surface: #FFFFFF;
+            --color-text: #111114;
+            --color-text-secondary: #6B7280;
+            --color-border: #E5E7EB;
+            --shadow-sm: 0 1px 2px rgba(17, 17, 20, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(17, 17, 20, 0.08), 0 2px 4px -1px rgba(17, 17, 20, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(17, 17, 20, 0.08), 0 4px 6px -2px rgba(17, 17, 20, 0.04);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--color-bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 布局容器 */
+        .admin-layout {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧边栏 */
         .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            border-radius: 8px;
-            margin: 4px 0;
-            transition: all 0.3s ease;
-        }
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .stats-card {
-            background: white;
-            border-radius: 15px;
+
+        .sidebar-header {
             padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
         }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--color-primary);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .sidebar-brand i {
+            color: var(--color-accent);
+            font-size: 1.5rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0.75rem;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 2px;
+        }
+
+        .nav-item {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            margin: 0.25rem 0;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: var(--color-bg-secondary);
+            color: var(--color-primary);
+        }
+
+        .nav-link.active {
+            background: rgba(147, 195, 242, 0.15);
+            color: var(--color-primary);
+        }
+
+        .nav-link i {
+            font-size: 1.125rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 0.75rem;
+            border-top: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: 0.5rem 0.75rem;
+        }
+
+        /* 右侧主内容区 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: var(--color-bg);
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: var(--color-bg);
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 4px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: var(--color-text-secondary);
+        }
+
+        .content-wrapper {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .page-header h1 {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin: 0;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .stats-card:hover {
-            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
+
+        .stats-card-inner {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
         .stats-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .stats-icon.primary {
+            background: linear-gradient(135deg, var(--color-accent) 0%, #B8D9F7 100%);
+            color: var(--color-primary);
+        }
+
+        .stats-icon.success {
+            background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
             color: white;
         }
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+
+        .stats-icon.info {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: white;
+        }
+
+        .stats-icon.warning {
+            background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+            color: white;
+        }
+
+        .stats-info h3 {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .stats-info p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* 图表容器 */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
             margin-bottom: 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+        }
+
+        .chart-card h5 {
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            font-size: 1rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        /* 系统状态卡片 */
+        .system-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+        }
+
+        .system-card h5 {
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            font-size: 1rem;
+        }
+
+        .system-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .system-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .system-item:last-child {
+            border-bottom: none;
+        }
+
+        .system-item label {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .system-item value {
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: var(--color-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 0.625rem 1.25rem;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            background: #2a2a30;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline-secondary {
+            border: 1.5px solid var(--color-border);
+            color: var(--color-text-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-outline-secondary:hover {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-text-secondary);
+            color: var(--color-primary);
+        }
+
+        /* 徽章 */
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 0.75em;
+            border-radius: 6px;
+        }
+
+        .badge.bg-success {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: #065F46;
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1000;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .content-wrapper {
+                padding: 1rem;
+                padding-top: 4rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 遮罩层 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-overlay.open {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- 侧边栏 -->
-            <div class="col-md-3 col-lg-2 px-0">
-                <div class="sidebar p-3">
-                    <div class="text-center mb-4">
-                        <h4 class="text-white mb-0">
-                            <i class="bi bi-shield-check"></i>
-                            管理后台
-                        </h4>
-                        <small class="text-white-50">API 中转服务</small>
-                    </div>
-                    
-                    <nav class="nav nav-pills flex-column">
-                        <a class="nav-link active" href="#" data-section="dashboard">
-                            <i class="bi bi-speedometer2 me-2"></i>
-                            仪表板
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+    </button>
+
+    <!-- 遮罩层 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="admin-layout">
+        <!-- 左侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <i class="bi bi-shield-check"></i>
+                    <span>管理后台</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin/dashboard">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>仪表板</span>
                         </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/admin/feedback">
-                            <i class="bi bi-chat-left-text me-2"></i>
-                            反馈管理
+                            <i class="bi bi-chat-left-text"></i>
+                            <span>反馈管理</span>
                         </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/admin/reports">
-                            <i class="bi bi-flag me-2"></i>
-                            举报管理
+                            <i class="bi bi-flag"></i>
+                            <span>举报管理</span>
                         </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/admin/blacklist">
-                            <i class="bi bi-shield-x me-2"></i>
-                            黑名单管理
+                            <i class="bi bi-shield-x"></i>
+                            <span>黑名单管理</span>
                         </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/admin/logs">
-                            <i class="bi bi-list-ul me-2"></i>
-                            API 日志
+                            <i class="bi bi-list-ul"></i>
+                            <span>API 日志</span>
                         </a>
-                        <a class="nav-link" href="#" data-section="system">
-                            <i class="bi bi-gear me-2"></i>
-                            系统信息
-                        </a>
-                        <hr class="text-white-50">
+                    </li>
+                </ul>
+
+                <div class="sidebar-divider"></div>
+
+                <ul class="nav-list">
+                    <li class="nav-item">
                         <a class="nav-link" href="/" target="_blank">
-                            <i class="bi bi-house me-2"></i>
-                            返回首页
+                            <i class="bi bi-house"></i>
+                            <span>返回首页</span>
                         </a>
-                        <a class="nav-link" href="#" id="logoutBtn">
-                            <i class="bi bi-box-arrow-right me-2"></i>
-                            退出登录
-                        </a>
-                    </nav>
-                </div>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a class="nav-link" href="#" id="logoutBtn">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>退出登录</span>
+                </a>
             </div>
+        </aside>
 
-            <!-- 主内容区 -->
-            <div class="col-md-9 col-lg-10 px-0">
-                <div class="main-content p-4">
-                    <!-- 仪表板部分 -->
-                    <div id="dashboard-section">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>管理仪表板</h2>
-                            <button class="btn btn-primary" onclick="refreshData()">
-                                <i class="bi bi-arrow-clockwise"></i>
-                                刷新数据
-                            </button>
-                        </div>
+        <!-- 右侧主内容区 -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <h1>管理仪表板</h1>
+                    <button class="btn btn-primary" id="refreshDataBtn">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        刷新数据
+                    </button>
+                </div>
 
-                        <!-- 统计卡片 -->
-                        <div class="row mb-4">
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-primary">
-                                            <i class="bi bi-activity"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="totalApiCalls">-</h3>
-                                            <p class="text-muted mb-0">总API调用</p>
-                                        </div>
-                                    </div>
-                                </div>
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <div class="stats-card-inner">
+                            <div class="stats-icon primary">
+                                <i class="bi bi-activity"></i>
                             </div>
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-success">
-                                            <i class="bi bi-clock"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="todayApiCalls">-</h3>
-                                            <p class="text-muted mb-0">今日调用</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-info">
-                                            <i class="bi bi-chat-dots"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="totalFeedback">-</h3>
-                                            <p class="text-muted mb-0">用户反馈</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-3">
-                                <div class="stats-card">
-                                    <div class="d-flex align-items-center">
-                                        <div class="stats-icon bg-warning">
-                                            <i class="bi bi-flag"></i>
-                                        </div>
-                                        <div class="ms-3">
-                                            <h3 class="mb-0" id="totalReports">-</h3>
-                                            <p class="text-muted mb-0">举报数量</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 图表区域 -->
-                        <div class="row">
-                            <div class="col-lg-8">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">最近7天 API 调用趋势</h5>
-                                    <canvas id="apiTrendChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">响应状态分布</h5>
-                                    <canvas id="statusChart" width="300" height="300"></canvas>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 系统状态 -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="chart-container">
-                                    <h5 class="mb-3">系统状态</h5>
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <p><strong>平均响应时间:</strong> <span id="avgResponseTime">-</span>ms</p>
-                                            <p><strong>服务运行时间:</strong> <span id="uptime">-</span></p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <p><strong>今日反馈:</strong> <span id="todayFeedback">-</span></p>
-                                            <p><strong>今日举报:</strong> <span id="todayReports">-</span></p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <p><strong>最后更新:</strong> <span id="lastUpdate">-</span></p>
-                                            <p><strong>系统状态:</strong> <span class="badge bg-success">正常运行</span></p>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="stats-info">
+                                <h3 id="totalApiCalls">-</h3>
+                                <p>总API调用</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 其他部分的占位符 -->
-                    <div id="feedback-section" style="display: none;">
-                        <h2>反馈管理</h2>
-                        <p>反馈管理功能开发中...</p>
+                    <div class="stats-card">
+                        <div class="stats-card-inner">
+                            <div class="stats-icon success">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="todayApiCalls">-</h3>
+                                <p>今日调用</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="reports-section" style="display: none;">
-                        <h2>举报管理</h2>
-                        <p>举报管理功能开发中...</p>
+                    <div class="stats-card">
+                        <div class="stats-card-inner">
+                            <div class="stats-icon info">
+                                <i class="bi bi-chat-dots"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="totalFeedback">-</h3>
+                                <p>用户反馈</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="logs-section" style="display: none;">
-                        <h2>API 日志</h2>
-                        <p>API日志功能开发中...</p>
+                    <div class="stats-card">
+                        <div class="stats-card-inner">
+                            <div class="stats-icon warning">
+                                <i class="bi bi-flag"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="totalReports">-</h3>
+                                <p>举报数量</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h5>最近7天 API 调用趋势</h5>
+                        <div class="chart-wrapper">
+                            <canvas id="apiTrendChart"></canvas>
+                        </div>
                     </div>
 
-                    <div id="system-section" style="display: none;">
-                        <h2>系统信息</h2>
-                        <p>系统信息功能开发中...</p>
+                    <div class="chart-card">
+                        <h5>响应状态分布</h5>
+                        <div class="chart-wrapper">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统状态 -->
+                <div class="system-card">
+                    <h5>系统状态</h5>
+                    <div class="system-grid">
+                        <div class="system-item">
+                            <label>平均响应时间</label>
+                            <value id="avgResponseTime">- ms</value>
+                        </div>
+                        <div class="system-item">
+                            <label>今日反馈</label>
+                            <value id="todayFeedback">-</value>
+                        </div>
+                        <div class="system-item">
+                            <label>今日举报</label>
+                            <value id="todayReports">-</value>
+                        </div>
+                        <div class="system-item">
+                            <label>最后更新</label>
+                            <value id="lastUpdate">-</value>
+                        </div>
+                        <div class="system-item">
+                            <label>系统状态</label>
+                            <value><span class="badge bg-success">正常运行</span></value>
+                        </div>
                     </div>
                 </div>
             </div>
+        </main>
     </div>
-    </div>
-    
+
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         let apiTrendChart, statusChart;
@@ -250,49 +640,19 @@
         document.addEventListener('DOMContentLoaded', function() {
             initCharts();
             loadDashboardData();
-            initNavigation();
-        });
 
-        // 导航功能
-        function initNavigation() {
-            const navLinks = document.querySelectorAll('.sidebar .nav-link[data-section]');
-            const sections = document.querySelectorAll('[id$="-section"]');
-            
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // 更新活动状态
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // 显示对应部分
-                    const sectionId = this.dataset.section + '-section';
-                    sections.forEach(section => {
-                        section.style.display = section.id === sectionId ? 'block' : 'none';
-                    });
-                });
-            });
-
-            // 退出登录
+            // 绑定事件监听器
+            document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
             document.getElementById('logoutBtn').addEventListener('click', function(e) {
                 e.preventDefault();
-                if (confirm('确定要退出登录吗？')) {
-                    logout();
-                }
+                logout();
             });
-        }
+            document.getElementById('refreshDataBtn').addEventListener('click', refreshData);
+        });
 
         // 初始化图表
         function initCharts() {
-            // 销毁现有图表（如果存在）
-            if (apiTrendChart) {
-                apiTrendChart.destroy();
-            }
-            if (statusChart) {
-                statusChart.destroy();
-            }
-
             // API趋势图表
             const apiTrendCtx = document.getElementById('apiTrendChart').getContext('2d');
             apiTrendChart = new Chart(apiTrendCtx, {
@@ -302,24 +662,38 @@
                     datasets: [{
                         label: 'API 调用次数',
                         data: [],
-                        borderColor: 'rgb(102, 126, 234)',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderColor: '#93C3F2',
+                        backgroundColor: 'rgba(147, 195, 242, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'top'
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#F3F4F6'
+                            },
+                            ticks: {
+                                color: '#6B7280'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#6B7280'
+                            }
                         }
                     }
                 }
@@ -334,29 +708,27 @@
                     datasets: [{
                         data: [0, 0, 0, 0],
                         backgroundColor: [
-                            '#28a745',
-                            '#ffc107',
-                            '#dc3545',
-                            '#6c757d'
+                            '#10B981',
+                            '#F59E0B',
+                            '#EF4444',
+                            '#6B7280'
                         ],
-                        borderWidth: 2,
-                        borderColor: '#fff'
+                        borderWidth: 0
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    return label + ': ' + value + '个请求';
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
                                 }
                             }
                         }
@@ -370,7 +742,7 @@
             try {
                 const response = await fetch('/admin/dashboard/data');
                 const result = await response.json();
-                
+
                 if (result.success) {
                     console.log('仪表板数据:', result.data);
                     updateStats(result.data);
@@ -389,7 +761,7 @@
             document.getElementById('todayApiCalls').textContent = data.todayApiCalls || 0;
             document.getElementById('totalFeedback').textContent = data.totalFeedback || 0;
             document.getElementById('totalReports').textContent = data.totalReports || 0;
-            document.getElementById('avgResponseTime').textContent = data.avgResponseTime || 0;
+            document.getElementById('avgResponseTime').textContent = (data.avgResponseTime || 0) + ' ms';
             document.getElementById('todayFeedback').textContent = data.todayFeedback || 0;
             document.getElementById('todayReports').textContent = data.todayReports || 0;
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('zh-CN');
@@ -397,60 +769,61 @@
 
         // 更新图表
         function updateCharts(data) {
-            // 更新趋势图表
-            if (data.weeklyTrend && Array.isArray(data.weeklyTrend)) {
-                const labels = data.weeklyTrend.map(item => item.date);
-                const values = data.weeklyTrend.map(item => item.count);
-                
-                // 清空现有数据并替换
+            if (data.weeklyTrend && data.weeklyTrend.length > 0) {
+                const labels = data.weeklyTrend.map(stat => stat.date);
+                const values = data.weeklyTrend.map(stat => stat.count);
+
                 apiTrendChart.data.labels = labels;
                 apiTrendChart.data.datasets[0].data = values;
                 apiTrendChart.update();
             }
 
-            // 更新状态图表
-            if (data.statusStats && Array.isArray(data.statusStats)) {
-                const statusData = [0, 0, 0, 0]; // 成功、客户端错误、服务器错误、其他
-                
-                data.statusStats.forEach(stat => {
-                    switch(stat.status_group) {
-                        case 'success':
-                            statusData[0] = stat.count;
-                            break;
-                        case 'client_error':
-                            statusData[1] = stat.count;
-                            break;
-                        case 'server_error':
-                            statusData[2] = stat.count;
-                            break;
-                        default:
-                            statusData[3] = stat.count;
-                    }
-                });
-                
-                // 完全替换数据而不是添加
-                statusChart.data.datasets[0].data = statusData;
-                statusChart.update('none'); // 使用 'none' 动画模式避免重复动画
-            } else {
-                // 如果没有数据，设置为默认值
-                statusChart.data.datasets[0].data = [0, 0, 0, 0];
-                statusChart.update('none');
+            if (data.statusStats) {
+                const success = data.statusStats.find(s => s.status_group === 'success')?.count || 0;
+                const clientError = data.statusStats.find(s => s.status_group === 'client_error')?.count || 0;
+                const serverError = data.statusStats.find(s => s.status_group === 'server_error')?.count || 0;
+                const other = data.statusStats.find(s => s.status_group === 'other')?.count || 0;
+
+                statusChart.data.datasets[0].data = [success, clientError, serverError, other];
+                statusChart.update();
             }
         }
 
         // 刷新数据
         function refreshData() {
-            console.log('刷新仪表板数据...');
             loadDashboardData();
+        }
+
+        // 移动端侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
         }
 
         // 退出登录
         async function logout() {
+            if (!confirm('确定要退出登录吗？')) {
+                return;
+            }
+
             try {
-                await fetch('/admin/logout', { method: 'POST' });
-                window.location.href = '/admin/login';
+                const response = await fetch('/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = '/admin/login';
+                } else {
+                    alert('退出登录失败: ' + (result.error || '未知错误'));
+                }
             } catch (error) {
                 console.error('退出登录失败:', error);
+                window.location.href = '/admin/login';
             }
         }
     </script>
