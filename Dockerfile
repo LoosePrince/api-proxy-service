@@ -1,6 +1,9 @@
 # 使用官方的Node.js 16镜像作为基础
 FROM node:16-alpine
 
+# 明确指定生产环境
+ENV NODE_ENV=production
+
 # 设置工作目录
 WORKDIR /app
 
