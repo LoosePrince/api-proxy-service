@@ -1,4 +1,6 @@
 const { db } = require('../models/database');
+const { recordAccessStats } = require('../utils/analytics');
+const { recordFailure, getClientIP } = require('../utils/blacklist');
 
 // 记录API调用日志
 const logApiCall = (req, res, next) => {
@@ -12,7 +14,7 @@ const logApiCall = (req, res, next) => {
         const responseTime = Date.now() - startTime;
         const method = req.method;
         const targetUrl = req.query.url || 'unknown';
-        const ipAddress = req.ip || req.connection.remoteAddress;
+        const ipAddress = getClientIP(req);
         const userAgent = req.get('User-Agent') || '';
         const responseStatus = res.statusCode;
         
@@ -23,10 +25,22 @@ const logApiCall = (req, res, next) => {
             [method, targetUrl, ipAddress, userAgent, responseStatus, responseTime],
             (err) => {
                 if (err) {
-                    console.error('记录API调用日志失败:', err);
+                    // 静默处理日志错误，避免影响主流程
                 }
             }
         );
+        
+        // 记录访问统计
+        recordAccessStats(req, responseStatus, responseTime).catch(() => {
+            // 静默处理统计错误
+        });
+        
+        // 记录失败请求（用于自动黑名单）
+        if (responseStatus >= 400) {
+            recordFailure(ipAddress, `HTTP ${responseStatus}`).catch(() => {
+                // 静默处理
+            });
+        }
         
         // 调用原始的end方法
         originalEnd.call(this, chunk, encoding);
@@ -37,14 +51,10 @@ const logApiCall = (req, res, next) => {
 
 // 记录错误日志
 const logError = (err, req, res, next) => {
-    console.error('服务器错误:', {
-        error: err.message,
-        stack: err.stack,
-        url: req.url,
-        method: req.method,
-        ip: req.ip,
-        timestamp: new Date().toISOString()
-    });
+    const ip = getClientIP(req);
+    
+    // 记录失败请求
+    recordFailure(ip, err.message || '服务器错误').catch(() => {});
     
     // 继续传递错误给下一个错误处理中间件
     next(err);
@@ -87,7 +97,7 @@ const requestLogger = (req, res, next) => {
     
     if (shouldLog) {
         const timestamp = new Date().toISOString();
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = getClientIP(req);
         console.log(`[${timestamp}] ${method} ${url} - ${ip}`);
     }
     

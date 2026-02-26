@@ -248,13 +248,64 @@ router.get('/blacklist/data', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
+        const { db } = require('../models/database');
         
-        const result = await getBlacklistEntries(page, limit);
+        // 并行查询统计数据和分页数据
+        const statsQueries = [
+            // 总黑名单数
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM blacklist WHERE expires_at IS NULL OR expires_at > datetime("now")', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ total: row.count });
+                });
+            }),
+            // 今日添加数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM blacklist WHERE DATE(created_at) = DATE('now')`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ today: row.count });
+                    }
+                );
+            }),
+            // 自动添加数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM blacklist WHERE added_by = 'system' AND (expires_at IS NULL OR expires_at > datetime('now'))`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ auto: row.count });
+                    }
+                );
+            }),
+            // 手动添加数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM blacklist WHERE added_by != 'system' AND (expires_at IS NULL OR expires_at > datetime('now'))`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ manual: row.count });
+                    }
+                );
+            }),
+            // 分页数据
+            getBlacklistEntries(page, limit)
+        ];
+        
+        const results = await Promise.all(statsQueries);
+        const blacklistResult = results[4];
         
         res.json({
             success: true,
-            data: result.data,
-            pagination: result.pagination
+            data: blacklistResult.data,
+            stats: {
+                total: results[0].total,
+                today: results[1].today,
+                auto: results[2].auto,
+                manual: results[3].manual
+            },
+            pagination: blacklistResult.pagination
         });
     } catch (error) {
         console.error('获取黑名单失败:', error);

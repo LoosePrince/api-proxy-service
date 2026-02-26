@@ -216,45 +216,96 @@ const getApiLogs = (req, res) => {
         const limit = parseInt(req.query.limit) || 50;
         const offset = (page - 1) * limit;
         
-        // 获取总数
-        db.get('SELECT COUNT(*) as total FROM api_logs', (err, countResult) => {
-            if (err) {
-                console.error('查询日志总数失败:', err);
-                return res.status(500).json({
+        // 并行查询统计数据和分页数据
+        const statsQueries = [
+            // 总请求数
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM api_logs', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ total: row.count });
+                });
+            }),
+            // 今日请求数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM api_logs WHERE DATE(created_at) = DATE('now')`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ today: row.count });
+                    }
+                );
+            }),
+            // 成功请求数 (2xx)
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM api_logs WHERE response_status >= 200 AND response_status < 300`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ success: row.count });
+                    }
+                );
+            }),
+            // 错误请求数 (4xx, 5xx)
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM api_logs WHERE response_status >= 400`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ error: row.count });
+                    }
+                );
+            }),
+            // 分页数据
+            new Promise((resolve, reject) => {
+                db.all(
+                    `SELECT id, method, target_url, ip_address, user_agent, response_status, response_time, created_at
+                     FROM api_logs 
+                     ORDER BY created_at DESC 
+                     LIMIT ? OFFSET ?`,
+                    [limit, offset],
+                    (err, rows) => {
+                        if (err) reject(err);
+                        else resolve({ rows });
+                    }
+                );
+            }),
+            // 总数（用于分页）
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM api_logs', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ totalCount: row.count });
+                });
+            })
+        ];
+        
+        Promise.all(statsQueries)
+            .then(results => {
+                const stats = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+                
+                res.json({
+                    success: true,
+                    data: stats.rows,
+                    stats: {
+                        total: stats.total,
+                        today: stats.today,
+                        success: stats.success,
+                        error: stats.error
+                    },
+                    pagination: {
+                        page,
+                        limit,
+                        total: stats.totalCount,
+                        pages: Math.ceil(stats.totalCount / limit)
+                    }
+                });
+            })
+            .catch(err => {
+                console.error('查询日志失败:', err);
+                res.status(500).json({
                     success: false,
                     error: '查询失败'
                 });
-            }
-            
-            // 获取分页数据
-            db.all(
-                `SELECT id, method, target_url, ip_address, user_agent, response_status, response_time, created_at
-                 FROM api_logs 
-                 ORDER BY created_at DESC 
-                 LIMIT ? OFFSET ?`,
-                [limit, offset],
-                (err, rows) => {
-                    if (err) {
-                        console.error('查询日志列表失败:', err);
-                        return res.status(500).json({
-                            success: false,
-                            error: '查询失败'
-                        });
-                    }
-                    
-                    res.json({
-                        success: true,
-                        data: rows,
-                        pagination: {
-                            page,
-                            limit,
-                            total: countResult.total,
-                            pages: Math.ceil(countResult.total / limit)
-                        }
-                    });
-                }
-            );
-        });
+            });
         
     } catch (error) {
         console.error('获取API日志时出错:', error);

@@ -23,6 +23,7 @@ const initializeDatabase = () => {
                     name VARCHAR(100),
                     email VARCHAR(255),
                     message TEXT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'pending',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
@@ -35,6 +36,7 @@ const initializeDatabase = () => {
                     reason TEXT NOT NULL,
                     description TEXT,
                     reporter_email VARCHAR(255),
+                    status VARCHAR(20) DEFAULT 'pending',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
@@ -53,7 +55,7 @@ const initializeDatabase = () => {
                 )
             `);
 
-            // 创建黑名单表
+            // 创建黑名单表（支持临时黑名单）
             db.run(`
                 CREATE TABLE IF NOT EXISTS blacklist (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,31 +65,33 @@ const initializeDatabase = () => {
                     reason TEXT,
                     added_by VARCHAR(50) DEFAULT 'system',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME,
                     UNIQUE(ip_address, user_agent_hash)
                 )
             `);
 
-            // 添加status字段到现有表（如果不存在）
+            // 创建访问统计表
             db.run(`
-                ALTER TABLE feedback ADD COLUMN status VARCHAR(20) DEFAULT 'pending'
+                CREATE TABLE IF NOT EXISTS access_stats (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date DATE NOT NULL,
+                    hour INTEGER,
+                    ip_address VARCHAR(45),
+                    endpoint VARCHAR(255),
+                    method VARCHAR(10),
+                    request_count INTEGER DEFAULT 0,
+                    avg_response_time INTEGER,
+                    error_count INTEGER DEFAULT 0,
+                    UNIQUE(date, hour, ip_address, endpoint)
+                )
             `, (err) => {
-                // 忽略"列已存在"的错误
-                if (err && !err.message.includes('duplicate column name')) {
-                    console.error('添加feedback.status字段失败:', err);
+                if (err) {
+                    console.error('创建访问统计表失败:', err);
                 }
             });
 
-            db.run(`
-                ALTER TABLE reports ADD COLUMN status VARCHAR(20) DEFAULT 'pending'
-            `, (err) => {
-                // 忽略"列已存在"的错误
-                if (err && !err.message.includes('duplicate column name')) {
-                    console.error('添加reports.status字段失败:', err);
-                } else {
-                    console.log('数据库表初始化完成');
-                    resolve();
-                }
-            });
+            console.log('数据库表初始化完成');
+            resolve();
         });
     });
 };
@@ -98,27 +102,11 @@ const closeDatabase = () => {
         db.close((err) => {
             if (err) {
                 console.error('关闭数据库连接时出错:', err);
-            } else {
-                console.log('数据库连接已关闭');
             }
             resolve();
         });
     });
 };
-
-// 如果直接运行此文件，则初始化数据库
-if (require.main === module) {
-    require('dotenv').config();
-    initializeDatabase()
-        .then(() => {
-            console.log('数据库初始化成功');
-            process.exit(0);
-        })
-        .catch(err => {
-            console.error('数据库初始化失败:', err);
-            process.exit(1);
-        });
-}
 
 module.exports = {
     db,

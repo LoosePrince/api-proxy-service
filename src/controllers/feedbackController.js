@@ -118,45 +118,96 @@ const getFeedback = (req, res) => {
         const limit = parseInt(req.query.limit) || 20;
         const offset = (page - 1) * limit;
         
-        // 获取总数
-        db.get('SELECT COUNT(*) as total FROM feedback', (err, countResult) => {
-            if (err) {
-                console.error('查询反馈总数失败:', err);
-                return res.status(500).json({
+        // 并行查询统计数据和分页数据
+        const statsQueries = [
+            // 总反馈数
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM feedback', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ total: row.count });
+                });
+            }),
+            // 今日反馈数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM feedback WHERE DATE(created_at) = DATE('now')`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ today: row.count });
+                    }
+                );
+            }),
+            // 已处理反馈数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM feedback WHERE status = 'processed'`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ processed: row.count });
+                    }
+                );
+            }),
+            // 待处理反馈数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM feedback WHERE status = 'pending'`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ pending: row.count });
+                    }
+                );
+            }),
+            // 分页数据
+            new Promise((resolve, reject) => {
+                db.all(
+                    `SELECT id, name, email, message, status, created_at 
+                     FROM feedback 
+                     ORDER BY created_at DESC 
+                     LIMIT ? OFFSET ?`,
+                    [limit, offset],
+                    (err, rows) => {
+                        if (err) reject(err);
+                        else resolve({ rows });
+                    }
+                );
+            }),
+            // 总数（用于分页）
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM feedback', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ totalCount: row.count });
+                });
+            })
+        ];
+        
+        Promise.all(statsQueries)
+            .then(results => {
+                const stats = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+                
+                res.json({
+                    success: true,
+                    data: stats.rows,
+                    stats: {
+                        total: stats.total,
+                        today: stats.today,
+                        processed: stats.processed,
+                        pending: stats.pending
+                    },
+                    pagination: {
+                        page,
+                        limit,
+                        total: stats.totalCount,
+                        pages: Math.ceil(stats.totalCount / limit)
+                    }
+                });
+            })
+            .catch(err => {
+                console.error('查询反馈失败:', err);
+                res.status(500).json({
                     success: false,
                     error: '查询失败'
                 });
-            }
-            
-            // 获取分页数据
-            db.all(
-                `SELECT id, name, email, message, status, created_at 
-                 FROM feedback 
-                 ORDER BY created_at DESC 
-                 LIMIT ? OFFSET ?`,
-                [limit, offset],
-                (err, rows) => {
-                    if (err) {
-                        console.error('查询反馈列表失败:', err);
-                        return res.status(500).json({
-                            success: false,
-                            error: '查询失败'
-                        });
-                    }
-                    
-                    res.json({
-                        success: true,
-                        data: rows,
-                        pagination: {
-                            page,
-                            limit,
-                            total: countResult.total,
-                            pages: Math.ceil(countResult.total / limit)
-                        }
-                    });
-                }
-            );
-        });
+            });
         
     } catch (error) {
         console.error('获取反馈列表时出错:', error);
@@ -174,45 +225,96 @@ const getReports = (req, res) => {
         const limit = parseInt(req.query.limit) || 20;
         const offset = (page - 1) * limit;
         
-        // 获取总数
-        db.get('SELECT COUNT(*) as total FROM reports', (err, countResult) => {
-            if (err) {
-                console.error('查询举报总数失败:', err);
-                return res.status(500).json({
+        // 并行查询统计数据和分页数据
+        const statsQueries = [
+            // 总举报数
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM reports', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ total: row.count });
+                });
+            }),
+            // 今日举报数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM reports WHERE DATE(created_at) = DATE('now')`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ today: row.count });
+                    }
+                );
+            }),
+            // 已处理举报数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM reports WHERE status = 'processed'`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ processed: row.count });
+                    }
+                );
+            }),
+            // 待处理举报数
+            new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT COUNT(*) as count FROM reports WHERE status = 'pending'`,
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve({ pending: row.count });
+                    }
+                );
+            }),
+            // 分页数据
+            new Promise((resolve, reject) => {
+                db.all(
+                    `SELECT id, target_url, reason, description, reporter_email, status, created_at 
+                     FROM reports 
+                     ORDER BY created_at DESC 
+                     LIMIT ? OFFSET ?`,
+                    [limit, offset],
+                    (err, rows) => {
+                        if (err) reject(err);
+                        else resolve({ rows });
+                    }
+                );
+            }),
+            // 总数（用于分页）
+            new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM reports', (err, row) => {
+                    if (err) reject(err);
+                    else resolve({ totalCount: row.count });
+                });
+            })
+        ];
+        
+        Promise.all(statsQueries)
+            .then(results => {
+                const stats = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+                
+                res.json({
+                    success: true,
+                    data: stats.rows,
+                    stats: {
+                        total: stats.total,
+                        today: stats.today,
+                        processed: stats.processed,
+                        pending: stats.pending
+                    },
+                    pagination: {
+                        page,
+                        limit,
+                        total: stats.totalCount,
+                        pages: Math.ceil(stats.totalCount / limit)
+                    }
+                });
+            })
+            .catch(err => {
+                console.error('查询举报失败:', err);
+                res.status(500).json({
                     success: false,
                     error: '查询失败'
                 });
-            }
-            
-            // 获取分页数据
-            db.all(
-                `SELECT id, target_url, reason, description, reporter_email, status, created_at 
-                 FROM reports 
-                 ORDER BY created_at DESC 
-                 LIMIT ? OFFSET ?`,
-                [limit, offset],
-                (err, rows) => {
-                    if (err) {
-                        console.error('查询举报列表失败:', err);
-                        return res.status(500).json({
-                            success: false,
-                            error: '查询失败'
-                        });
-                    }
-                    
-                    res.json({
-                        success: true,
-                        data: rows,
-                        pagination: {
-                            page,
-                            limit,
-                            total: countResult.total,
-                            pages: Math.ceil(countResult.total / limit)
-                        }
-                    });
-                }
-            );
-        });
+            });
         
     } catch (error) {
         console.error('获取举报列表时出错:', error);

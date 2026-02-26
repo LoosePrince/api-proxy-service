@@ -12,43 +12,46 @@ const authenticateAdmin = (req, res, next) => {
     });
 };
 
-// 登录验证
+// 登录验证 - 强制使用bcrypt
 const validateLogin = async (username, password) => {
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'password';
-    
-    console.log('登录验证:', { username, adminUsername, passwordProvided: !!password });
+    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
     
     if (username !== adminUsername) {
-        console.log('用户名不匹配');
         return false;
     }
     
-    // 首先尝试明文比较（开发环境）
-    if (password === adminPassword) {
-        console.log('明文密码验证成功');
-        return true;
-    }
+    // 如果没有配置密码哈希，使用默认密码的哈希
+    const hashToCompare = adminPasswordHash || '$2a$10$YourDefaultHashHere';
     
-    // 如果明文比较失败，尝试bcrypt比较（生产环境）
     try {
-        const isValid = await bcrypt.compare(password, adminPassword);
-        console.log('bcrypt验证结果:', isValid);
+        const isValid = await bcrypt.compare(password, hashToCompare);
         return isValid;
     } catch (error) {
-        console.log('bcrypt验证失败:', error.message);
         return false;
     }
 };
 
 // 生成密码hash（用于初始化）
 const hashPassword = async (password) => {
-    const saltRounds = 10;
+    const saltRounds = 12;
     return await bcrypt.hash(password, saltRounds);
+};
+
+// 初始化时生成默认密码哈希的辅助函数
+const generateInitialPasswordHash = async () => {
+    const defaultPassword = process.env.ADMIN_PASSWORD || 'changeme';
+    const hash = await hashPassword(defaultPassword);
+    console.log('=================================================');
+    console.log('请设置以下环境变量作为管理员密码哈希：');
+    console.log(`ADMIN_PASSWORD_HASH=${hash}`);
+    console.log('=================================================');
+    return hash;
 };
 
 module.exports = {
     authenticateAdmin,
     validateLogin,
-    hashPassword
+    hashPassword,
+    generateInitialPasswordHash
 }; 
