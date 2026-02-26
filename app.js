@@ -4,9 +4,8 @@ const path = require('path');
 const session = require('express-session');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
 const { initializeDatabase } = require('./src/models/database');
-const { logError, requestLogger } = require('./src/middleware/logger');
+const { logError, httpLogger } = require('./src/middleware/logger');
 
 // 加载环境变量
 require('dotenv').config();
@@ -42,12 +41,8 @@ app.use(cors({
 // 压缩响应
 app.use(compression());
 
-// 请求日志
-if (process.env.NODE_ENV !== 'production') {
-    app.use(requestLogger);
-} else {
-    app.use(morgan('combined'));
-}
+// 请求日志（统一风格：报错/警告/主动信息 + 核心API调用）
+app.use(httpLogger);
 
 // 解析请求体
 app.use(express.json({ limit: `${process.env.MAX_REQUEST_SIZE || 1}mb` }));
