@@ -1,6 +1,7 @@
 const { db } = require('../models/database');
 const { validateFeedback, validateReport } = require('../utils/validator');
 const { sanitizeInput } = require('../utils/validator');
+const { getClientIP } = require('../utils/blacklist');
 
 // 提交反馈
 const submitFeedback = (req, res) => {
@@ -23,11 +24,31 @@ const submitFeedback = (req, res) => {
             email: email ? sanitizeInput(email) : null,
             message: sanitizeInput(message)
         };
+
+        // 采集提交者信息
+        const ipAddress = getClientIP(req);
+        const userAgent = req.get('User-Agent') || '';
+        const clientInfo = {
+            ip: ipAddress,
+            userAgent,
+            referer: req.get('Referer') || '',
+            acceptLanguage: req.get('Accept-Language') || '',
+            acceptEncoding: req.get('Accept-Encoding') || '',
+            origin: req.get('Origin') || '',
+            forwardedFor: req.get('X-Forwarded-For') || ''
+        };
         
         // 插入数据库
         db.run(
-            `INSERT INTO feedback (name, email, message) VALUES (?, ?, ?)`,
-            [cleanData.name, cleanData.email, cleanData.message],
+            `INSERT INTO feedback (name, email, message, ip_address, user_agent, client_info) VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                cleanData.name,
+                cleanData.email,
+                cleanData.message,
+                ipAddress,
+                userAgent,
+                JSON.stringify(clientInfo)
+            ],
             function(err) {
                 if (err) {
                     console.error('保存反馈失败:', err);
@@ -78,11 +99,32 @@ const submitReport = (req, res) => {
             description: description ? sanitizeInput(description) : null,
             reporter_email: reporter_email ? sanitizeInput(reporter_email) : null
         };
+
+        // 采集提交者信息
+        const ipAddress = getClientIP(req);
+        const userAgent = req.get('User-Agent') || '';
+        const clientInfo = {
+            ip: ipAddress,
+            userAgent,
+            referer: req.get('Referer') || '',
+            acceptLanguage: req.get('Accept-Language') || '',
+            acceptEncoding: req.get('Accept-Encoding') || '',
+            origin: req.get('Origin') || '',
+            forwardedFor: req.get('X-Forwarded-For') || ''
+        };
         
         // 插入数据库
         db.run(
-            `INSERT INTO reports (target_url, reason, description, reporter_email) VALUES (?, ?, ?, ?)`,
-            [cleanData.target_url, cleanData.reason, cleanData.description, cleanData.reporter_email],
+            `INSERT INTO reports (target_url, reason, description, reporter_email, ip_address, user_agent, client_info) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                cleanData.target_url,
+                cleanData.reason,
+                cleanData.description,
+                cleanData.reporter_email,
+                ipAddress,
+                userAgent,
+                JSON.stringify(clientInfo)
+            ],
             function(err) {
                 if (err) {
                     console.error('保存举报失败:', err);

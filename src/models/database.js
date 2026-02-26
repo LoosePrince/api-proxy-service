@@ -24,9 +24,25 @@ const initializeDatabase = () => {
                     email VARCHAR(255),
                     message TEXT NOT NULL,
                     status VARCHAR(20) DEFAULT 'pending',
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    client_info TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+
+            // 兼容已有数据库，补充缺失列
+            const safeAddColumn = (table, columnDef) => {
+                db.run(`ALTER TABLE ${table} ADD COLUMN ${columnDef}`, (err) => {
+                    if (err && !/duplicate column name/i.test(err.message)) {
+                        console.error(`为表 ${table} 添加列失败:`, err);
+                    }
+                });
+            };
+
+            safeAddColumn('feedback', 'ip_address VARCHAR(45)');
+            safeAddColumn('feedback', 'user_agent TEXT');
+            safeAddColumn('feedback', 'client_info TEXT');
 
             // 创建举报信息表
             db.run(`
@@ -37,9 +53,16 @@ const initializeDatabase = () => {
                     description TEXT,
                     reporter_email VARCHAR(255),
                     status VARCHAR(20) DEFAULT 'pending',
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    client_info TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+
+            safeAddColumn('reports', 'ip_address VARCHAR(45)');
+            safeAddColumn('reports', 'user_agent TEXT');
+            safeAddColumn('reports', 'client_info TEXT');
 
             // 创建API调用日志表
             db.run(`
@@ -107,6 +130,23 @@ const closeDatabase = () => {
         });
     });
 };
+
+// 作为独立脚本执行时，自动初始化数据库（用于 npm run init-db）
+if (require.main === module) {
+    console.log('开始初始化数据库...');
+    initializeDatabase()
+        .then(() => {
+            console.log('数据库初始化完成');
+            return closeDatabase();
+        })
+        .then(() => {
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.error('数据库初始化失败:', err);
+            process.exit(1);
+        });
+}
 
 module.exports = {
     db,
