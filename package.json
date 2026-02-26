@@ -1,6 +1,6 @@
 {
   "name": "api-proxy-service",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一个轻量级的 Node.js API 中转服务",
   "main": "app.js",
   "scripts": {
