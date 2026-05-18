@@ -1,6 +1,7 @@
 const axios = require('axios');
-const { validateProxyRequest } = require('../utils/validator');
-const { isUrlBlacklisted, filterSensitiveHeaders } = require('../utils/security');
+const { validateProxyRequest, isValidHttpMethod } = require('../utils/validator');
+const { filterSensitiveHeaders } = require('../utils/security');
+const { isBlacklistedTargetUrl } = require('../utils/blacklist');
 
 // API中转处理
 const handleProxy = async (req, res) => {
@@ -19,7 +20,6 @@ const handleProxy = async (req, res) => {
         }
         
         // 验证HTTP方法
-        const { isValidHttpMethod } = require('../utils/validator');
         if (!isValidHttpMethod(method)) {
             return res.status(400).json({
                 error: 'HTTP方法无效',
@@ -28,10 +28,11 @@ const handleProxy = async (req, res) => {
         }
         
         // 检查URL黑名单
-        if (isUrlBlacklisted(targetUrl)) {
+        const blacklistCheck = await isBlacklistedTargetUrl(targetUrl);
+        if (blacklistCheck.isBlacklisted) {
             return res.status(403).json({
                 error: '禁止访问',
-                message: '不允许访问该类型的URL'
+                message: blacklistCheck.reason || '不允许访问该类型的URL'
             });
         }
         

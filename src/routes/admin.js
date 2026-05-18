@@ -241,7 +241,22 @@ router.put('/reports/:id/processed', async (req, res) => {
 });
 
 // 举报加入黑名单
-router.post('/reports/:id/blacklist', addReportToBlacklist);
+router.post('/reports/:id/blacklist', async (req, res) => {
+    try {
+        const result = await addReportToBlacklist(req.params.id, req.session.adminUsername);
+        res.json({
+            success: true,
+            message: '已根据举报URL加入黑名单',
+            data: result
+        });
+    } catch (error) {
+        console.error('举报加入黑名单失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || '加入黑名单失败'
+        });
+    }
+});
 
 // 黑名单管理API
 router.get('/blacklist/data', async (req, res) => {

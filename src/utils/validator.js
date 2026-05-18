@@ -1,3 +1,5 @@
+const net = require('net');
+
 // URL验证
 const isValidUrl = (string) => {
     try {
@@ -86,6 +88,35 @@ const validateReport = (data) => {
     };
 };
 
+const isPrivateHostname = (hostname) => {
+    const normalized = hostname.toLowerCase();
+    const ipv6Host = normalized.replace(/^\[|\]$/g, '');
+
+    if (normalized === 'localhost' || normalized.endsWith('.localhost')) {
+        return true;
+    }
+
+    if (net.isIP(ipv6Host) === 4) {
+        const parts = ipv6Host.split('.').map(Number);
+        return parts[0] === 10 ||
+            parts[0] === 127 ||
+            (parts[0] === 169 && parts[1] === 254) ||
+            (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+            (parts[0] === 192 && parts[1] === 168) ||
+            parts[0] === 0;
+    }
+
+    if (net.isIP(ipv6Host) === 6) {
+        return ipv6Host === '::1' ||
+            ipv6Host === '::' ||
+            ipv6Host.startsWith('fc') ||
+            ipv6Host.startsWith('fd') ||
+            ipv6Host.startsWith('fe80:');
+    }
+
+    return false;
+};
+
 // 验证代理请求
 const validateProxyRequest = (data) => {
     const errors = [];
@@ -102,13 +133,7 @@ const validateProxyRequest = (data) => {
     if (data.url) {
         try {
             const url = new URL(data.url);
-            const hostname = url.hostname.toLowerCase();
-            
-            if (hostname === 'localhost' || 
-                hostname === '127.0.0.1' || 
-                hostname.startsWith('192.168.') ||
-                hostname.startsWith('10.') ||
-                hostname.startsWith('172.')) {
+            if (isPrivateHostname(url.hostname)) {
                 errors.push('不允许访问本地或内网地址');
             }
         } catch (e) {
@@ -136,6 +161,7 @@ module.exports = {
     isValidUrl,
     isValidEmail,
     isValidHttpMethod,
+    isPrivateHostname,
     validateFeedback,
     validateReport,
     validateProxyRequest,

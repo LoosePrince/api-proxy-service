@@ -1,3 +1,5 @@
+const { isPrivateHostname } = require('./validator');
+
 // 检查请求大小
 const checkRequestSize = (maxSizeMB = 1) => {
     return (req, res, next) => {
@@ -24,8 +26,14 @@ const urlBlacklist = [
 ];
 
 const isUrlBlacklisted = (url) => {
-    const lowerUrl = url.toLowerCase();
-    return urlBlacklist.some(blocked => lowerUrl.startsWith(blocked));
+    try {
+        const parsedUrl = new URL(url);
+        const lowerUrl = url.toLowerCase();
+        return urlBlacklist.some(blocked => lowerUrl.startsWith(blocked)) ||
+            isPrivateHostname(parsedUrl.hostname);
+    } catch (error) {
+        return true;
+    }
 };
 
 // 敏感信息过滤

@@ -1,5 +1,4 @@
-const crypto = require('crypto');
-const { db } = require('../models/database');
+const { isUrlBlacklisted } = require('../utils/security');
 
 // 内存缓存用于临时黑名单（避免频繁查询数据库）
 const tempBlacklistCache = new Map();
@@ -153,6 +152,43 @@ function checkBlacklist(req) {
                         isTemporary: row ? row.added_by === 'system' : false
                     });
                 }
+            }
+        );
+    });
+}
+
+function isBlacklistedTargetUrl(url) {
+    return new Promise((resolve, reject) => {
+        if (isUrlBlacklisted(url)) {
+            resolve({ isBlacklisted: true, reason: 'URL 使用了禁止访问的协议或地址范围' });
+            return;
+        }
+
+        let hostname;
+        try {
+            hostname = new URL(url).hostname.toLowerCase();
+        } catch (error) {
+            resolve({ isBlacklisted: true, reason: 'URL 格式无效' });
+            return;
+        }
+
+        db.get(
+            `SELECT * FROM blacklist
+             WHERE lower(ip_address) = ?
+             AND (expires_at IS NULL OR expires_at > datetime('now'))
+             LIMIT 1`,
+            [hostname],
+            (err, row) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve({
+                    isBlacklisted: !!row,
+                    reason: row ? row.reason : null,
+                    blacklistEntry: row
+                });
             }
         );
     });
@@ -321,7 +357,7 @@ module.exports = {
     generateDeviceFingerprint,
     generateUserAgentHash,
     getClientIP,
-    checkBlacklist,
+    isBlacklistedTargetUrl,
     addToBlacklist,
     addToTempBlacklist,
     addReportToBlacklist,

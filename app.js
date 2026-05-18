@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -6,13 +8,25 @@ const helmet = require('helmet');
 const compression = require('compression');
 const { initializeDatabase } = require('./src/models/database');
 const { logError, httpLogger } = require('./src/middleware/logger');
-
-// 加载环境变量
-require('dotenv').config();
+const { corsSecurityCheck } = require('./src/utils/security');
 
 // 创建Express应用
 const app = express();
 const PORT = process.env.PORT || 3000;
+let server;
+
+function requireConfig(name, fallback, { requiredInProduction = false } = {}) {
+    const value = process.env[name];
+    if (value) {
+        return value;
+    }
+
+    if (requiredInProduction && process.env.NODE_ENV === 'production') {
+        throw new Error(`生产环境必须配置 ${name}`);
+    }
+
+    return fallback;
+}
 
 // 安全中间件
 app.use(helmet({
@@ -32,8 +46,11 @@ app.use(helmet({
 // CORS配置
 app.use(cors({
     origin: function(origin, callback) {
-        // 允许所有来源（生产环境中应该限制）
-        callback(null, true);
+        if (!origin || corsSecurityCheck(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error('当前来源不允许跨域访问'));
     },
     credentials: true
 }));
@@ -50,12 +67,14 @@ app.use(express.urlencoded({ extended: true, limit: `${process.env.MAX_REQUEST_S
 
 // Session配置
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    secret: requireConfig('SESSION_SECRET', 'development-session-secret', { requiredInProduction: true }),
     resave: false,
     saveUninitialized: false,
+    name: 'api_proxy_sid',
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24小时
     }
 }));
@@ -86,17 +105,16 @@ app.use('/public', publicRoutes);
 app.use('/admin', adminRoutes);
 
 // 根路径重定向到首页
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // API信息端点
-app.get('/info', (req, res) => {
+app.get('/info', (_req, res) => {
     res.json({
         name: 'API中转服务',
-        version: '1.0.0',
+        version: require('./package.json').version,
         description: '一个轻量级的 Node.js API 中转服务',
-        author: 'Your Name',
         endpoints: {
             api: '/api',
             admin: '/admin',
@@ -115,7 +133,7 @@ app.get('/info', (req, res) => {
 });
 
 // 健康检查端点
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
@@ -127,7 +145,7 @@ app.get('/health', (req, res) => {
 });
 
 // 404处理
-app.use((req, res, next) => {
+app.use((req, res) => {
     if (req.path.startsWith('/api/')) {
         // API路径返回JSON错误
         res.status(404).json({
@@ -143,7 +161,7 @@ app.use((req, res, next) => {
 
 // 全局错误处理
 app.use(logError);
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
     console.error('全局错误处理:', err);
     
     // 不泄露错误详情到生产环境
@@ -169,11 +187,8 @@ process.on('SIGINT', gracefulShutdown);
 
 function gracefulShutdown(signal) {
     console.log(`\n收到 ${signal} 信号，开始优雅关闭...`);
-    
-    server.close(() => {
-        console.log('HTTP 服务器已关闭');
-        
-        // 关闭数据库连接
+
+    const shutdownDatabase = () => {
         const { closeDatabase } = require('./src/models/database');
         closeDatabase().then(() => {
             console.log('数据库连接已关闭');
@@ -182,13 +197,23 @@ function gracefulShutdown(signal) {
             console.error('关闭数据库连接时出错:', err);
             process.exit(1);
         });
+    };
+
+    if (!server) {
+        shutdownDatabase();
+        return;
+    }
+
+    server.close(() => {
+        console.log('HTTP 服务器已关闭');
+        shutdownDatabase();
     });
     
     // 强制退出超时
     setTimeout(() => {
         console.error('强制退出');
         process.exit(1);
-    }, 10000);
+    }, 10000).unref();
 }
 
 // 启动服务器
@@ -200,7 +225,7 @@ async function startServer() {
         console.log('数据库初始化完成');
         
         // 启动HTTP服务器
-        const server = app.listen(PORT, () => {
+        server = app.listen(PORT, () => {
             console.log(`
 🚀 API中转服务已启动！
 
@@ -215,9 +240,6 @@ async function startServer() {
 开始使用 API 中转服务吧！ 🎉
             `);
         });
-        
-        // 将server设为全局变量以便优雅关闭
-        global.server = server;
         
         return server;
         

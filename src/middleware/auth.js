@@ -1,5 +1,20 @@
 const bcrypt = require('bcryptjs');
 
+const DEFAULT_DEVELOPMENT_PASSWORD_HASH = '$2a$12$kI4YXhSL5XAIn31ET5U8XeNloZoYJx/bQhzKtXe8J3Xcl6H97m9A2'; // changeme
+
+function getRequiredAdminPasswordHash() {
+    const configuredHash = process.env.ADMIN_PASSWORD_HASH;
+    if (configuredHash) {
+        return configuredHash;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('生产环境必须配置 ADMIN_PASSWORD_HASH');
+    }
+
+    return DEFAULT_DEVELOPMENT_PASSWORD_HASH;
+}
+
 // 验证管理员认证
 const authenticateAdmin = (req, res, next) => {
     if (req.session && req.session.isAdmin) {
@@ -15,17 +30,14 @@ const authenticateAdmin = (req, res, next) => {
 // 登录验证 - 强制使用bcrypt
 const validateLogin = async (username, password) => {
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+    const adminPasswordHash = getRequiredAdminPasswordHash();
     
     if (username !== adminUsername) {
         return false;
     }
     
-    // 如果没有配置密码哈希，使用默认密码的哈希
-    const hashToCompare = adminPasswordHash || '$2a$10$YourDefaultHashHere';
-    
     try {
-        const isValid = await bcrypt.compare(password, hashToCompare);
+        const isValid = await bcrypt.compare(password, adminPasswordHash);
         return isValid;
     } catch (error) {
         return false;
@@ -53,5 +65,6 @@ module.exports = {
     authenticateAdmin,
     validateLogin,
     hashPassword,
-    generateInitialPasswordHash
+    generateInitialPasswordHash,
+    getRequiredAdminPasswordHash
 }; 
